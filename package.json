@@ -1,0 +1,13 @@
+{
+  "name": "3dworks-online-dashboard",
+  "version": "1.0.0",
+  "description": "3dWorks Online Dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "mqtt": "^5.15.1"
+  }
+}

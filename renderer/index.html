@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="3dWorks Online Dashboard" />
+  <link rel="apple-touch-icon" href="logo.png" />
+  <title>3dWorks Online Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>🖨️ 3dWorks Online Dashboard</h1>
+      <nav>
+        <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+        <button class="tab-btn" data-tab="calculator">Calculator</button>
+        <button class="tab-btn" data-tab="filaments">Filaments</button>
+        <button class="tab-btn" data-tab="labor-rates">Labor Rates</button>
+        <button class="tab-btn" data-tab="printers">Printers</button>
+        <button class="tab-btn" data-tab="quotes">Quotes</button>
+        <button class="tab-btn" data-tab="filament-storage">Filament Storage</button>
+        <button class="tab-btn" data-tab="settings">Settings</button>
+        <button class="tab-btn" data-tab="history">History</button>
+      </nav>
+    </header>
+
+    <!-- DASHBOARD TAB -->
+    <div id="tab-dashboard" class="tab active">
+      <div class="card dash-card" style="margin-bottom:14px">
+        <h2>Printer Status</h2>
+        <div class="printer-status-grid" id="printerStatusGrid"></div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Jobs</div>
+          <div class="stat-value" id="d-jobs">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Revenue</div>
+          <div class="stat-value green" id="d-revenue">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Profit</div>
+          <div class="stat-value green" id="d-profit">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg Markup</div>
+          <div class="stat-value" id="d-margin">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Quotes</div>
+          <div class="stat-value" id="d-quotes">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Top Filament</div>
+          <div class="stat-value small" id="d-topFilament">—</div>
+        </div>
+      </div>
+
+      <div class="dash-row">
+        <div class="card dash-card">
+          <h2>Monthly Revenue</h2>
+          <div id="d-monthlyEmpty" class="result-empty">No history yet.</div>
+          <div class="table-scroll">
+            <table class="data-table" id="d-monthlyTable" style="display:none">
+              <thead><tr><th>Month</th><th>Jobs</th><th>Revenue</th><th>Profit</th><th>Avg Markup</th></tr></thead>
+              <tbody id="d-monthlyBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card dash-card">
+          <h2>Recent Jobs</h2>
+          <div id="d-recentEmpty" class="result-empty">No history yet.</div>
+          <div class="table-scroll">
+            <table class="data-table" id="d-recentTable" style="display:none">
+              <thead><tr><th>Date</th><th>Job</th><th>Price</th><th>Profit</th></tr></thead>
+              <tbody id="d-recentBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALCULATOR TAB -->
+    <div id="tab-calculator" class="tab">
+      <div class="three-col">
+        <div class="card">
+          <h2>Print &amp; Material</h2>
+          <div class="field">
+            <label>Printer</label>
+            <select id="printerSelect"></select>
+          </div>
+          <div class="field">
+            <label>Filament</label>
+            <select id="filamentSelect"></select>
+          </div>
+          <div class="field">
+            <label>Filament used (grams)</label>
+            <input type="number" id="filamentGrams" min="0" step="0.1" value="50" />
+            <span class="hint">Filament cost includes a 20% waste allowance on top of this.</span>
+          </div>
+          <div class="field">
+            <label>Print time (hours)</label>
+            <input type="number" id="printHours" min="0" step="0.25" value="2" />
+          </div>
+          <div class="field">
+            <label>Extra materials cost ($)</label>
+            <input type="number" id="extraMaterial" min="0" step="0.01" value="0" />
+            <span class="hint">Supports, adhesives, packaging…</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Labor &amp; Pricing</h2>
+          <div class="field">
+            <label>Labor rate</label>
+            <select id="laborSelect"></select>
+          </div>
+          <div class="field">
+            <label>Labor time (hours)</label>
+            <input type="number" id="laborHours" min="0" step="0.25" value="0" />
+            <span class="hint">Design, prep, finishing…</span>
+          </div>
+          <div class="field">
+            <label>Items per plate</label>
+            <input type="number" id="itemsPerPlate" min="1" step="1" value="1" />
+          </div>
+          <div class="field">
+            <label>Markup multiplier</label>
+            <input type="number" id="profitMargin" min="1" step="0.1" value="3" />
+            <span class="hint">e.g. 2 = 2× cost, 2.5 = 2.5× cost</span>
+          </div>
+          <div class="field">
+            <label>Discount (%)</label>
+            <input type="number" id="discount" min="0" max="100" step="0.5" value="0" />
+            <span class="hint">Applied to the suggested sell price.</span>
+          </div>
+          <div class="field">
+            <label>Job name (optional)</label>
+            <input type="text" id="jobName" placeholder="e.g. Dragon figurine" />
+          </div>
+          <button class="btn-primary wide" id="calcBtn">Calculate Price</button>
+          <button class="btn-secondary wide" id="resetCalcBtn" style="margin-top:8px">Reset to Defaults</button>
+        </div>
+
+        <div class="card results-card">
+          <h2>Cost Breakdown</h2>
+          <div class="result-empty" id="resultEmpty">Fill in the details and press <strong>Calculate Price</strong>.</div>
+          <div id="resultContent" style="display:none">
+            <table class="breakdown">
+              <tr><td>Filament cost</td><td id="r-filament">—</td></tr>
+              <tr><td>Electricity cost</td><td id="r-electricity">—</td></tr>
+              <tr><td>Maintenance cost</td><td id="r-maintenance">—</td></tr>
+              <tr><td>Extra materials</td><td id="r-extra">—</td></tr>
+              <tr class="subtotal"><td>Total plate cost</td><td id="r-plateCost">—</td></tr>
+              <tr><td>Items per plate</td><td id="r-items">—</td></tr>
+              <tr><td>Print cost per item</td><td id="r-itemCost">—</td></tr>
+              <tr><td>Labor (<span id="r-laborName">—</span> × <span id="r-laborHrs">—</span>h)</td><td id="r-labor">—</td></tr>
+              <tr class="subtotal"><td>Total cost per item</td><td id="r-totalItemCost">—</td></tr>
+            </table>
+
+            <div class="price-tiers">
+              <div class="price-tier" onclick="selectMarkup(2)" title="Click to use this markup">
+                <div class="tier-label">2× markup</div>
+                <div class="tier-price" id="r-price2x">—</div>
+                <div class="tier-detail">Commission: <span id="r-comm2x">—</span></div>
+                <div class="tier-detail">Profit: <span id="r-profit2x">—</span></div>
+              </div>
+              <div class="price-tier tier-highlight" onclick="selectMarkup(3)" title="Click to use this markup">
+                <div class="tier-label">3× markup</div>
+                <div class="tier-price" id="r-price3x">—</div>
+                <div class="tier-detail">Commission: <span id="r-comm3x">—</span></div>
+                <div class="tier-detail">Profit: <span id="r-profit3x">—</span></div>
+              </div>
+              <div class="price-tier" onclick="selectMarkup(3.5)" title="Click to use this markup">
+                <div class="tier-label">3.5× markup</div>
+                <div class="tier-price" id="r-price35x">—</div>
+                <div class="tier-detail">Commission: <span id="r-comm35x">—</span></div>
+                <div class="tier-detail">Profit: <span id="r-profit35x">—</span></div>
+              </div>
+            </div>
+
+            <div class="price-box">
+              <div class="price-row">
+                <span>Suggested sell price (<span id="r-marginPct">3</span>× markup)</span>
+                <span class="price-big" id="r-price">—</span>
+              </div>
+              <div class="price-detail">
+                <span>Commission (<span id="r-commPct">10</span>%)</span>
+                <span id="r-commission">—</span>
+              </div>
+              <div class="price-detail">
+                <span>Your profit</span>
+                <span id="r-profit">—</span>
+              </div>
+              <div class="price-detail">
+                <span>Net after commission</span>
+                <span id="r-net">—</span>
+              </div>
+              <div class="price-detail discount-row" id="discountRow" style="display:none">
+                <span>Discount (<span id="r-discountPct">0</span>%)</span>
+                <span id="r-discountAmt">—</span>
+              </div>
+              <div class="price-final" id="discountedPriceRow" style="display:none">
+                <span>Discounted price</span>
+                <span id="r-discountedPrice">—</span>
+              </div>
+            </div>
+
+            <div class="custom-price-box">
+              <h3>Custom Price</h3>
+              <div class="custom-price-row">
+                <input type="number" id="customPrice" min="0" step="0.01" placeholder="Enter your price…" />
+              </div>
+              <div id="customPriceResult" style="display:none">
+                <div class="price-detail">
+                  <span>Commission (<span id="cp-commPct">—</span>%)</span>
+                  <span id="cp-commission">—</span>
+                </div>
+                <div class="price-detail">
+                  <span>Net after commission</span>
+                  <span id="cp-net">—</span>
+                </div>
+                <div class="price-detail">
+                  <span>Profit</span>
+                  <span id="cp-profit">—</span>
+                </div>
+                <div class="effective-margin">
+                  Effective markup: <span id="cp-margin">—</span>
+                </div>
+                <div class="effective-margin warning" id="cp-warning" style="display:none">
+                  ⚠ Price is below cost
+                </div>
+              </div>
+            </div>
+
+            <div class="action-row">
+              <button class="btn-secondary" id="saveQuoteBtn">Save as Quote</button>
+              <button class="btn-secondary" id="saveBtn">Save to History</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILAMENTS TAB -->
+
+    <div id="tab-filaments" class="tab">
+      <div class="card">
+        <h2>Filament Profiles</h2>
+        <div class="table-scroll">
+          <table class="data-table" id="filamentTable">
+            <thead><tr><th>Name</th><th>Cost per kg ($)</th><th>Cost per g ($)</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <hr />
+        <h3>Add / Edit Filament</h3>
+        <div class="inline-form">
+          <input type="hidden" id="filEditId" />
+          <input type="text" id="filName" placeholder="e.g. PETG Brand X" />
+          <input type="number" id="filCostKg" placeholder="Cost per kg ($)" min="0" step="0.01" />
+          <button class="btn-primary" id="filSaveBtn">Add Filament</button>
+          <button class="btn-secondary" id="filCancelBtn" style="display:none">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LABOR RATES TAB -->
+    <div id="tab-labor-rates" class="tab">
+      <div class="card">
+        <h2>Labor Rate Profiles</h2>
+        <div class="table-scroll">
+          <table class="data-table" id="laborTable">
+            <thead><tr><th>Name</th><th>Rate ($/hr)</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <hr />
+        <h3>Add / Edit Labor Rate</h3>
+        <div class="inline-form">
+          <input type="hidden" id="labEditId" />
+          <input type="text" id="labName" placeholder="e.g. Design work" />
+          <input type="number" id="labRate" placeholder="Rate ($/hr)" min="0" step="0.5" />
+          <button class="btn-primary" id="labSaveBtn">Add Rate</button>
+          <button class="btn-secondary" id="labCancelBtn" style="display:none">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRINTERS TAB -->
+    <div id="tab-printers" class="tab">
+      <div class="card">
+        <h2>Printer Profiles</h2>
+        <div class="table-scroll">
+          <table class="data-table" id="printerTable">
+            <thead><tr><th>Name</th><th>Wattage (W)</th><th>Maintenance ($/hr)</th><th>Status Source</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <hr />
+        <h3>Add / Edit Printer</h3>
+        <input type="hidden" id="prnEditId" />
+        <div class="inline-form">
+          <input type="text" id="prnName" placeholder="e.g. Bambu X1 Carbon" />
+          <input type="number" id="prnWatts" placeholder="Wattage (W)" min="0" step="1" />
+          <input type="number" id="prnMaint" placeholder="Maintenance ($/hr)" min="0" step="0.01" />
+        </div>
+
+        <div class="field" style="max-width:260px">
+          <label>Live status source</label>
+          <select id="prnPlatform">
+            <option value="">None</option>
+            <option value="octoprint">OctoPrint</option>
+            <option value="bambu">Bambu Lab (LAN mode)</option>
+            <option value="moonraker">Moonraker (Klipper)</option>
+          </select>
+        </div>
+
+        <div id="prnOctoprintFields" style="display:none">
+          <div class="inline-form">
+            <input type="text" id="prnOctoHost" placeholder="Host / IP (e.g. 192.168.1.50)" />
+            <input type="number" id="prnOctoPort" placeholder="Port (default 80)" min="1" step="1" />
+            <input type="text" id="prnOctoKey" placeholder="API Key" />
+          </div>
+          <label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;margin:2px 0 14px">
+            <input type="checkbox" id="prnOctoHttps" style="width:auto" /> Use HTTPS
+          </label>
+        </div>
+
+        <div id="prnBambuFields" style="display:none">
+          <div class="inline-form" style="margin-bottom:14px">
+            <input type="text" id="prnBambuHost" placeholder="Host / IP (e.g. 192.168.1.60)" />
+            <input type="text" id="prnBambuSerial" placeholder="Serial number" />
+            <input type="text" id="prnBambuCode" placeholder="LAN Access Code" />
+          </div>
+        </div>
+
+        <div id="prnMoonrakerFields" style="display:none">
+          <div class="inline-form">
+            <input type="text" id="prnMoonHost" placeholder="Host / IP (e.g. 192.168.0.80)" />
+            <input type="number" id="prnMoonPort" placeholder="Port (default 80)" min="1" step="1" />
+            <input type="text" id="prnMoonKey" placeholder="API Key (optional)" />
+          </div>
+          <label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;margin:2px 0 14px">
+            <input type="checkbox" id="prnMoonHttps" style="width:auto" /> Use HTTPS
+          </label>
+        </div>
+
+        <div class="inline-form">
+          <button class="btn-primary" id="prnSaveBtn">Add Printer</button>
+          <button class="btn-secondary" id="prnCancelBtn" style="display:none">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUOTES TAB -->
+    <div id="tab-quotes" class="tab">
+      <div class="card" id="quoteListView">
+        <div class="history-header">
+          <h2>Customer Quotes</h2>
+          <div class="history-actions">
+            <button class="btn-danger" id="clearQuotesBtn">Clear All</button>
+          </div>
+        </div>
+        <div id="quotesEmpty" class="result-empty">No quotes yet. Calculate a price and click <strong>Save as Quote</strong>.</div>
+        <div class="table-scroll">
+          <table class="data-table" id="quotesTable" style="display:none">
+            <thead>
+              <tr><th>Date</th><th>Customer</th><th>Job</th><th>Price</th><th>Valid Until</th><th></th></tr>
+            </thead>
+            <tbody id="quotesBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- QUOTE PRINT VIEW -->
+      <div id="quotePrintView" style="display:none">
+        <div class="card">
+          <div class="quote-doc" id="quoteDoc">
+            <div class="quote-header">
+              <div class="quote-brand">
+                <img src="logo.png" alt="3D Works Online" class="quote-logo" />
+                <div class="quote-brand-name">3D Works Online</div>
+              </div>
+              <div class="quote-header-right">
+                <div class="quote-title">QUOTE</div>
+                <div class="quote-meta">
+                  <div>Date: <span id="qp-date">—</span></div>
+                  <div>Valid until: <span id="qp-validUntil">—</span></div>
+                  <div>Quote #: <span id="qp-id">—</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="quote-to">
+              <strong>To:</strong> <span id="qp-customer">—</span>
+            </div>
+            <h3 class="quote-job" id="qp-job">—</h3>
+            <table class="breakdown quote-breakdown">
+              <tr><td>Filament (<span id="qp-filament">—</span>)</td><td id="qp-filamentGrams">—</td></tr>
+              <tr><td>Print time</td><td id="qp-printHours">—</td></tr>
+              <tr id="qp-extraRow"><td>Extra materials</td><td id="qp-extra">—</td></tr>
+              <tr id="qp-laborRow"><td>Labor (<span id="qp-laborName">—</span>, <span id="qp-laborHrs">—</span>h)</td><td id="qp-labor">—</td></tr>
+              <tr><td>Items per plate</td><td id="qp-items">—</td></tr>
+            </table>
+            <div class="quote-price-section">
+              <div class="quote-price-row">
+                <span>Unit price</span>
+                <span id="qp-price">—</span>
+              </div>
+              <div class="quote-discount" id="qp-discountRow" style="display:none">
+                <span>Discount (<span id="qp-discountPct">—</span>%)</span>
+                <span id="qp-discountAmt">—</span>
+              </div>
+              <div class="quote-price-row quote-final">
+                <span>Final price</span>
+                <span id="qp-finalPrice">—</span>
+              </div>
+            </div>
+            <div class="quote-notes" id="qp-notesRow" style="display:none">
+              <strong>Notes:</strong>
+              <p id="qp-notes">—</p>
+            </div>
+          </div>
+          <div class="quote-actions no-print">
+            <button class="btn-secondary" id="backToQuotesBtn">← Back</button>
+            <button class="btn-primary" id="printQuoteBtn">🖨 Print Quote</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILAMENT STORAGE TAB -->
+    <div id="tab-filament-storage" class="tab">
+      <div class="card">
+        <h2>Filament Storage — Humidity &amp; Temp</h2>
+        <div id="haSensorsEmpty" class="result-empty">Not configured yet — add your Home Assistant URL and token in the Settings tab.</div>
+        <div id="haSensorsGrid"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div id="tab-settings" class="tab">
+      <div class="card" style="max-width:480px">
+        <h2>Global Settings</h2>
+        <div class="field">
+          <label>Electricity rate ($/kWh)</label>
+          <input type="number" id="sElecRate" min="0" step="0.001" />
+          <span class="hint">Used across all printer profiles.</span>
+        </div>
+        <div class="field">
+          <label>Commission (%)</label>
+          <input type="number" id="sCommission" min="0" max="100" step="0.1" />
+          <span class="hint">Percentage of the selling price paid as commission.</span>
+        </div>
+        <button class="btn-primary" id="settingsSaveBtn">Save Settings</button>
+        <div class="toast" id="settingsToast">Saved!</div>
+      </div>
+
+      <div class="card" style="max-width:480px; margin-top:14px">
+        <h2>Home Assistant</h2>
+        <div class="field">
+          <label>Base URL</label>
+          <input type="text" id="sHaUrl" placeholder="http://192.168.0.212:8123" />
+          <span class="hint">Reachable from the Mac running this server.</span>
+        </div>
+        <div class="field">
+          <label>Long-Lived Access Token</label>
+          <input type="password" id="sHaToken" placeholder="Paste token here" />
+          <span class="hint">Create one in HA: your profile → Long-Lived Access Tokens.</span>
+        </div>
+        <button class="btn-primary" id="haSaveBtn">Save Home Assistant Settings</button>
+        <div class="toast" id="haToast">Saved!</div>
+      </div>
+
+      <div class="card" style="max-width:480px; margin-top:14px">
+        <h2>Backup</h2>
+        <p class="hint" style="margin-bottom:14px">Saves everything — printers, filaments, labor rates, quotes, history, and settings — as one JSON file.</p>
+        <button class="btn-primary" id="backupBtn">Download Backup</button>
+        <div class="toast" id="backupToast">Saved!</div>
+      </div>
+    </div>
+
+    <!-- HISTORY TAB -->
+    <div id="tab-history" class="tab">
+      <div class="card">
+        <div class="history-header">
+          <h2>Saved Calculations</h2>
+          <div class="history-actions">
+            <button class="btn-secondary" id="exportCsvBtn">⬇ Export CSV</button>
+            <button class="btn-secondary" id="printBtn">🖨 Print</button>
+            <button class="btn-danger" id="clearHistoryBtn">Clear All</button>
+          </div>
+        </div>
+        <div class="print-title">3dWorks Online Dashboard — Calculation History</div>
+        <div id="historyEmpty" class="result-empty">No saved calculations yet.</div>
+        <div class="table-scroll">
+          <table class="data-table" id="historyTable" style="display:none">
+            <thead>
+              <tr>
+                <th>Date</th><th>Job</th><th>Printer</th><th>Filament</th>
+                <th>Grams</th><th>Print hrs</th><th>Labor</th><th>Labor hrs</th>
+                <th>Items</th><th>Cost/item</th><th>Sell price</th>
+                <th>Discount</th><th>Final price</th><th>Profit</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAVE AS QUOTE MODAL -->
+  <div class="modal-overlay" id="quoteModal" style="display:none">
+    <div class="modal">
+      <h2>Save as Quote</h2>
+      <div class="field">
+        <label>Customer name</label>
+        <input type="text" id="qCustomer" placeholder="e.g. Jane Smith" />
+      </div>
+      <div class="field">
+        <label>Valid until</label>
+        <input type="date" id="qValidUntil" />
+      </div>
+      <div class="field">
+        <label>Notes (optional)</label>
+        <textarea id="qNotes" rows="3" placeholder="Any extra info for the customer…"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="qCancelBtn">Cancel</button>
+        <button class="btn-primary" id="qConfirmBtn">Save Quote</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT HISTORY MODAL -->
+  <div class="modal-overlay" id="historyEditModal" style="display:none">
+    <div class="modal" style="width:640px">
+      <h2>Edit Saved Calculation</h2>
+      <input type="hidden" id="heEditId" />
+      <div class="two-col">
+        <div>
+          <div class="field">
+            <label>Job name</label>
+            <input type="text" id="heJobName" />
+          </div>
+          <div class="field">
+            <label>Printer</label>
+            <select id="hePrinterSelect"></select>
+          </div>
+          <div class="field">
+            <label>Filament</label>
+            <select id="heFilamentSelect"></select>
+          </div>
+          <div class="field">
+            <label>Filament used (grams)</label>
+            <input type="number" id="heGrams" min="0" step="0.1" />
+          </div>
+          <div class="field">
+            <label>Print time (hours)</label>
+            <input type="number" id="heHours" min="0" step="0.25" />
+          </div>
+          <div class="field">
+            <label>Extra materials cost ($)</label>
+            <input type="number" id="heExtra" min="0" step="0.01" />
+          </div>
+        </div>
+        <div>
+          <div class="field">
+            <label>Labor rate</label>
+            <select id="heLaborSelect"></select>
+          </div>
+          <div class="field">
+            <label>Labor time (hours)</label>
+            <input type="number" id="heLaborHours" min="0" step="0.25" />
+          </div>
+          <div class="field">
+            <label>Items per plate</label>
+            <input type="number" id="heItems" min="1" step="1" />
+          </div>
+          <div class="field">
+            <label>Markup multiplier</label>
+            <input type="number" id="heMarkup" min="1" step="0.1" />
+          </div>
+          <div class="field">
+            <label>Discount (%)</label>
+            <input type="number" id="heDiscount" min="0" max="100" step="0.5" />
+          </div>
+          <div class="field">
+            <label>Custom Price ($, optional)</label>
+            <input type="number" id="heCustomPrice" min="0" step="0.01" placeholder="Leave blank to use markup" />
+            <span class="hint">Overrides the markup-calculated price, same as the calculator.</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="heCancelBtn">Cancel</button>
+        <button class="btn-primary" id="heSaveBtn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
