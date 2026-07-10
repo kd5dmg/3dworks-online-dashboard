@@ -957,12 +957,39 @@ document.getElementById('backupBtn').addEventListener('click', async () => {
 });
 
 // ── History ───────────────────────────────────────────────────────────────────
+let historySort = { key: 'date', dir: 'desc' };
+
+function getSortedHistory() {
+  const { key, dir } = historySort;
+  const mult = dir === 'asc' ? 1 : -1;
+  return [...db.history].sort((a, b) => {
+    if (key === 'job') return a.job.localeCompare(b.job, undefined, { sensitivity: 'base' }) * mult;
+    return (a.id - b.id) * mult; // "date" sort uses the save-time timestamp for true chronological order
+  });
+}
+
+document.querySelectorAll('#historyTable th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    if (historySort.key === key) {
+      historySort.dir = historySort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      historySort = { key, dir: key === 'job' ? 'asc' : 'desc' };
+    }
+    renderHistory();
+  });
+});
+
 function renderHistory() {
   const empty = document.getElementById('historyEmpty');
   const table = document.getElementById('historyTable');
   if (!db.history.length) { empty.style.display = 'block'; table.style.display = 'none'; return; }
   empty.style.display = 'none'; table.style.display = 'table';
-  document.getElementById('historyBody').innerHTML = db.history.map(h => `
+
+  document.getElementById('sortArrow-date').textContent = historySort.key === 'date' ? (historySort.dir === 'asc' ? '▲' : '▼') : '';
+  document.getElementById('sortArrow-job').textContent  = historySort.key === 'job'  ? (historySort.dir === 'asc' ? '▲' : '▼') : '';
+
+  document.getElementById('historyBody').innerHTML = getSortedHistory().map(h => `
     <tr>
       <td>${h.date}</td>
       <td>${h.job}</td>
