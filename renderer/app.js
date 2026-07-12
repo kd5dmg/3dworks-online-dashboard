@@ -1119,12 +1119,26 @@ function renderHistory() {
       <td>${h.discount ? fmt(h.discountedPrice) : '—'}</td>
       <td class="badge-profit">${fmt(h.profit)}</td>
       <td>
+        <button class="icon-btn" onclick="pushToInventory(${h.id}, this)" title="Add ${h.items} to inventory, as if printed again">📦</button>
         <button class="icon-btn" onclick="editHistory(${h.id})">✏️</button>
         <button class="icon-btn del" onclick="deleteHistory(${h.id})">🗑</button>
       </td>
     </tr>
   `).join('');
 }
+
+window.pushToInventory = (id, btn) => {
+  const h = getById(db.history, id);
+  if (!h || h.job === '—') return;
+  addToInventory(h.job, h.items);
+  persist();
+  renderInventoryTable();
+  if (btn) {
+    const original = btn.textContent;
+    btn.textContent = '✓';
+    setTimeout(() => { btn.textContent = original; }, 1200);
+  }
+};
 
 window.deleteHistory = (id) => {
   db.history = db.history.filter(h => h.id !== id);
