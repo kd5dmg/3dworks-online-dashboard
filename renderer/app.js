@@ -698,8 +698,9 @@ function renderInventoryTable() {
       <td>${i.name}</td>
       <td>${i.qtyOnHand}</td>
       <td>
-        <input type="number" id="invTake-${i.id}" min="1" step="1" value="1" style="width:64px" />
-        <button class="btn-secondary" onclick="takeFromInventory(${i.id})">Take to Store</button>
+        <input type="number" id="invAdjust-${i.id}" min="1" step="1" value="1" style="width:64px" />
+        <button class="btn-secondary" onclick="addToInventoryRow(${i.id})">+ Add More</button>
+        <button class="btn-secondary" onclick="takeFromInventory(${i.id})">Take to Store / Sold</button>
       </td>
       <td>
         <button class="icon-btn" onclick="editInventory(${i.id})">✏️</button>
@@ -709,10 +710,20 @@ function renderInventoryTable() {
   `).join('');
 }
 
+window.addToInventoryRow = (id) => {
+  const item = getById(db.inventory, id);
+  if (!item) return;
+  const qty = parseInt(document.getElementById(`invAdjust-${id}`).value) || 0;
+  if (qty <= 0) return;
+  item.qtyOnHand += qty;
+  persist();
+  renderInventoryTable();
+};
+
 window.takeFromInventory = (id) => {
   const item = getById(db.inventory, id);
   if (!item) return;
-  const qty = parseInt(document.getElementById(`invTake-${id}`).value) || 0;
+  const qty = parseInt(document.getElementById(`invAdjust-${id}`).value) || 0;
   if (qty <= 0) return;
   item.qtyOnHand = Math.max(0, item.qtyOnHand - qty);
   persist();
