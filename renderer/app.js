@@ -709,7 +709,7 @@ function renderInventoryTable() {
   const sorted = [...db.inventory].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) * mult);
 
   document.querySelector('#inventoryTable tbody').innerHTML = sorted.map(i => {
-    const lowStock = i.qtyOnHand < 1;
+    const lowStock = i.qtyOnHand <= 1;
     return `
     <tr class="${lowStock ? 'low-stock' : ''}">
       <td>${i.name}</td>
