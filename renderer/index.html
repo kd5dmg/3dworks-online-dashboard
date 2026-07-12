@@ -21,6 +21,7 @@
         <button class="tab-btn" data-tab="labor-rates">Labor Rates</button>
         <button class="tab-btn" data-tab="printers">Printers</button>
         <button class="tab-btn" data-tab="quotes">Quotes</button>
+        <button class="tab-btn" data-tab="inventory">Inventory</button>
         <button class="tab-btn" data-tab="filament-storage">Filament Storage</button>
         <button class="tab-btn" data-tab="settings">Settings</button>
         <button class="tab-btn" data-tab="history">History</button>
@@ -431,6 +432,30 @@
             <button class="btn-secondary" id="backToQuotesBtn">← Back</button>
             <button class="btn-primary" id="printQuoteBtn">🖨 Print Quote</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVENTORY TAB -->
+    <div id="tab-inventory" class="tab">
+      <div class="card">
+        <h2>Item Inventory</h2>
+        <p class="hint" style="margin-bottom:14px">Stock automatically increases when you Save to History. Use this tab to take items to the store or make manual corrections.</p>
+        <div id="inventoryEmpty" class="result-empty">No items yet — save a calculation to History to add one automatically, or add one below.</div>
+        <div class="table-scroll">
+          <table class="data-table" id="inventoryTable" style="display:none">
+            <thead><tr><th>Item</th><th>Qty on Shelf</th><th>Take to Store</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <hr />
+        <h3>Add / Edit Item</h3>
+        <div class="inline-form">
+          <input type="hidden" id="invEditId" />
+          <input type="text" id="invName" placeholder="e.g. Highland Cow Pen Holder" />
+          <input type="number" id="invQty" placeholder="Qty on shelf" min="0" step="1" />
+          <button class="btn-primary" id="invSaveBtn">Add Item</button>
+          <button class="btn-secondary" id="invCancelBtn" style="display:none">Cancel</button>
         </div>
       </div>
     </div>

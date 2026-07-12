@@ -41,6 +41,7 @@ async function init() {
     ];
   }
   if (!db.quotes) db.quotes = [];
+  if (!db.inventory) db.inventory = [];
 
   await persist();
 
@@ -53,6 +54,7 @@ async function init() {
   renderSettings();
   renderHistory();
   renderQuotes();
+  renderInventoryTable();
   renderDashboard();
   renderPrinterStatuses();
   setInterval(renderPrinterStatuses, 5000);
@@ -544,9 +546,12 @@ function resolvedPricing(r) {
 document.getElementById('saveBtn').addEventListener('click', () => {
   const r = document.getElementById('calcBtn')._lastResult;
   if (!r) return;
-  db.history.unshift({ id: Date.now(), date: new Date().toLocaleDateString(), job: document.getElementById('jobName').value.trim() || '—', ...r, ...resolvedPricing(r) });
+  const job = document.getElementById('jobName').value.trim() || '—';
+  db.history.unshift({ id: Date.now(), date: new Date().toLocaleDateString(), job, ...r, ...resolvedPricing(r) });
+  if (job !== '—') addToInventory(job, r.items);
   persist();
   renderHistory();
+  renderInventoryTable();
   renderDashboard();
   const btn = document.getElementById('saveBtn');
   btn.textContent = 'Saved ✓';
@@ -673,6 +678,85 @@ document.getElementById('clearQuotesBtn').addEventListener('click', () => {
   persist();
   renderQuotes();
 });
+
+// ── Inventory ─────────────────────────────────────────────────────────────────
+function addToInventory(name, qty) {
+  qty = parseInt(qty) || 0;
+  if (qty <= 0) return;
+  const existing = db.inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
+  if (existing) existing.qtyOnHand += qty;
+  else db.inventory.push({ id: Date.now(), name, qtyOnHand: qty });
+}
+
+function renderInventoryTable() {
+  const empty = document.getElementById('inventoryEmpty');
+  const table = document.getElementById('inventoryTable');
+  if (!db.inventory.length) { empty.style.display = 'block'; table.style.display = 'none'; return; }
+  empty.style.display = 'none'; table.style.display = 'table';
+  document.querySelector('#inventoryTable tbody').innerHTML = db.inventory.map(i => `
+    <tr>
+      <td>${i.name}</td>
+      <td>${i.qtyOnHand}</td>
+      <td>
+        <input type="number" id="invTake-${i.id}" min="1" step="1" value="1" style="width:64px" />
+        <button class="btn-secondary" onclick="takeFromInventory(${i.id})">Take to Store</button>
+      </td>
+      <td>
+        <button class="icon-btn" onclick="editInventory(${i.id})">✏️</button>
+        <button class="icon-btn del" onclick="deleteInventory(${i.id})">🗑</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+window.takeFromInventory = (id) => {
+  const item = getById(db.inventory, id);
+  if (!item) return;
+  const qty = parseInt(document.getElementById(`invTake-${id}`).value) || 0;
+  if (qty <= 0) return;
+  item.qtyOnHand = Math.max(0, item.qtyOnHand - qty);
+  persist();
+  renderInventoryTable();
+};
+
+document.getElementById('invSaveBtn').addEventListener('click', () => {
+  const id   = document.getElementById('invEditId').value;
+  const name = document.getElementById('invName').value.trim();
+  const qty  = parseInt(document.getElementById('invQty').value);
+  if (!name || isNaN(qty) || qty < 0) return;
+  if (id) {
+    const i = getById(db.inventory, id);
+    i.name = name; i.qtyOnHand = qty;
+  } else {
+    db.inventory.push({ id: Date.now(), name, qtyOnHand: qty });
+  }
+  persist(); renderInventoryTable(); resetInventoryForm();
+});
+
+window.editInventory = (id) => {
+  const i = getById(db.inventory, id);
+  document.getElementById('invEditId').value = i.id;
+  document.getElementById('invName').value   = i.name;
+  document.getElementById('invQty').value    = i.qtyOnHand;
+  document.getElementById('invSaveBtn').textContent     = 'Update Item';
+  document.getElementById('invCancelBtn').style.display = 'inline-block';
+};
+
+window.deleteInventory = (id) => {
+  if (!confirm('Delete this inventory item?')) return;
+  db.inventory = db.inventory.filter(i => i.id !== Number(id));
+  persist(); renderInventoryTable();
+};
+
+document.getElementById('invCancelBtn').addEventListener('click', resetInventoryForm);
+
+function resetInventoryForm() {
+  document.getElementById('invEditId').value = '';
+  document.getElementById('invName').value   = '';
+  document.getElementById('invQty').value    = '';
+  document.getElementById('invSaveBtn').textContent     = 'Add Item';
+  document.getElementById('invCancelBtn').style.display = 'none';
+}
 
 // ── Printers ──────────────────────────────────────────────────────────────────
 const PLATFORM_LABELS = { octoprint: 'OctoPrint', bambu: 'Bambu Lab', moonraker: 'Moonraker' };
