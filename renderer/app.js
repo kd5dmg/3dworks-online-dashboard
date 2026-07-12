@@ -548,7 +548,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
   if (!r) return;
   const job = document.getElementById('jobName').value.trim() || '—';
   db.history.unshift({ id: Date.now(), date: new Date().toLocaleDateString(), job, ...r, ...resolvedPricing(r) });
-  if (job !== '—') addToInventory(job, r.items);
+  if (job !== '—') addToInventory(job, r.items, r.discount ? r.discountedPrice : r.price);
   persist();
   renderHistory();
   renderInventoryTable();
@@ -680,12 +680,16 @@ document.getElementById('clearQuotesBtn').addEventListener('click', () => {
 });
 
 // ── Inventory ─────────────────────────────────────────────────────────────────
-function addToInventory(name, qty) {
+function addToInventory(name, qty, price) {
   qty = parseInt(qty) || 0;
   if (qty <= 0) return;
   const existing = db.inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
-  if (existing) existing.qtyOnHand += qty;
-  else db.inventory.push({ id: Date.now(), name, qtyOnHand: qty });
+  if (existing) {
+    existing.qtyOnHand += qty;
+    if (price != null) existing.sellingPrice = price;
+  } else {
+    db.inventory.push({ id: Date.now(), name, qtyOnHand: qty, sellingPrice: price || 0 });
+  }
 }
 
 let inventorySortDir = 'asc';
@@ -714,6 +718,7 @@ function renderInventoryTable() {
     <tr class="${lowStock ? 'low-stock' : ''}">
       <td>${i.name}</td>
       <td>${i.qtyOnHand}${lowStock ? ' <span class="low-stock-badge">Low Stock</span>' : ''}</td>
+      <td>${fmt(i.sellingPrice || 0)}</td>
       <td>
         <input type="number" id="invAdjust-${i.id}" min="1" step="1" value="1" style="width:64px" />
         <button class="btn-secondary" onclick="addToInventoryRow(${i.id})">+ Add More</button>
@@ -749,15 +754,16 @@ window.takeFromInventory = (id) => {
 };
 
 document.getElementById('invSaveBtn').addEventListener('click', () => {
-  const id   = document.getElementById('invEditId').value;
-  const name = document.getElementById('invName').value.trim();
-  const qty  = parseInt(document.getElementById('invQty').value);
+  const id    = document.getElementById('invEditId').value;
+  const name  = document.getElementById('invName').value.trim();
+  const qty   = parseInt(document.getElementById('invQty').value);
+  const price = parseFloat(document.getElementById('invPrice').value) || 0;
   if (!name || isNaN(qty) || qty < 0) return;
   if (id) {
     const i = getById(db.inventory, id);
-    i.name = name; i.qtyOnHand = qty;
+    i.name = name; i.qtyOnHand = qty; i.sellingPrice = price;
   } else {
-    db.inventory.push({ id: Date.now(), name, qtyOnHand: qty });
+    db.inventory.push({ id: Date.now(), name, qtyOnHand: qty, sellingPrice: price });
   }
   persist(); renderInventoryTable(); resetInventoryForm();
 });
@@ -767,6 +773,7 @@ window.editInventory = (id) => {
   document.getElementById('invEditId').value = i.id;
   document.getElementById('invName').value   = i.name;
   document.getElementById('invQty').value    = i.qtyOnHand;
+  document.getElementById('invPrice').value  = i.sellingPrice || 0;
   document.getElementById('invSaveBtn').textContent     = 'Update Item';
   document.getElementById('invCancelBtn').style.display = 'inline-block';
 };
@@ -783,9 +790,23 @@ function resetInventoryForm() {
   document.getElementById('invEditId').value = '';
   document.getElementById('invName').value   = '';
   document.getElementById('invQty').value    = '';
+  document.getElementById('invPrice').value  = '';
   document.getElementById('invSaveBtn').textContent     = 'Add Item';
   document.getElementById('invCancelBtn').style.display = 'none';
 }
+
+document.getElementById('exportInventoryCsvBtn').addEventListener('click', () => {
+  if (!db.inventory.length) return;
+  const headers = ['Item', 'Qty on Shelf', 'Selling Price'];
+  const rows = db.inventory.map(i => [i.name, i.qtyOnHand, (i.sellingPrice || 0).toFixed(2)]
+    .map(v => `"${String(v).replace(/"/g, '""')}"`));
+  const csv  = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `inventory-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+});
 
 // ── Printers ──────────────────────────────────────────────────────────────────
 const PLATFORM_LABELS = { octoprint: 'OctoPrint', bambu: 'Bambu Lab', moonraker: 'Moonraker' };
@@ -1130,7 +1151,7 @@ function renderHistory() {
 window.pushToInventory = (id, btn) => {
   const h = getById(db.history, id);
   if (!h || h.job === '—') return;
-  addToInventory(h.job, h.items);
+  addToInventory(h.job, h.items, h.discount ? h.discountedPrice : h.price);
   persist();
   renderInventoryTable();
   if (btn) {

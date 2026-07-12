@@ -439,12 +439,17 @@
     <!-- INVENTORY TAB -->
     <div id="tab-inventory" class="tab">
       <div class="card">
-        <h2>Item Inventory</h2>
+        <div class="history-header">
+          <h2>Item Inventory</h2>
+          <div class="history-actions">
+            <button class="btn-secondary" id="exportInventoryCsvBtn">⬇ Export CSV</button>
+          </div>
+        </div>
         <p class="hint" style="margin-bottom:14px">Stock automatically increases when you Save to History. Use this tab to take items to the store or make manual corrections.</p>
         <div id="inventoryEmpty" class="result-empty">No items yet — save a calculation to History to add one automatically, or add one below.</div>
         <div class="table-scroll">
           <table class="data-table" id="inventoryTable" style="display:none">
-            <thead><tr><th class="sortable" data-sort="name">Item <span class="sort-arrow" id="sortArrow-invName"></span></th><th>Qty on Shelf</th><th>Adjust Stock</th><th></th></tr></thead>
+            <thead><tr><th class="sortable" data-sort="name">Item <span class="sort-arrow" id="sortArrow-invName"></span></th><th>Qty on Shelf</th><th>Selling Price</th><th>Adjust Stock</th><th></th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -454,6 +459,7 @@
           <input type="hidden" id="invEditId" />
           <input type="text" id="invName" placeholder="e.g. Highland Cow Pen Holder" />
           <input type="number" id="invQty" placeholder="Qty on shelf" min="0" step="1" />
+          <input type="number" id="invPrice" placeholder="Selling price ($)" min="0" step="0.01" />
           <button class="btn-primary" id="invSaveBtn">Add Item</button>
           <button class="btn-secondary" id="invCancelBtn" style="display:none">Cancel</button>
         </div>
