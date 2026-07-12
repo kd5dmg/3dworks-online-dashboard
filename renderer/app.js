@@ -766,6 +766,10 @@ document.getElementById('invSaveBtn').addEventListener('click', () => {
     db.inventory.push({ id: Date.now(), name, qtyOnHand: qty, sellingPrice: price });
   }
   persist(); renderInventoryTable(); resetInventoryForm();
+
+  const toast = document.getElementById('inventoryToast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
 });
 
 window.editInventory = (id) => {
@@ -776,6 +780,8 @@ window.editInventory = (id) => {
   document.getElementById('invPrice').value  = i.sellingPrice || 0;
   document.getElementById('invSaveBtn').textContent     = 'Update Item';
   document.getElementById('invCancelBtn').style.display = 'inline-block';
+  document.getElementById('invName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.getElementById('invName').focus();
 };
 
 window.deleteInventory = (id) => {
