@@ -692,14 +692,28 @@ function addToInventory(name, qty, price) {
   }
 }
 
-let inventorySortDir = 'asc';
+let inventorySort = { key: 'name', dir: 'asc' };
 
 document.querySelectorAll('#inventoryTable th.sortable').forEach(th => {
   th.addEventListener('click', () => {
-    inventorySortDir = inventorySortDir === 'asc' ? 'desc' : 'asc';
+    const key = th.dataset.sort;
+    if (inventorySort.key === key) {
+      inventorySort.dir = inventorySort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      inventorySort = { key, dir: key === 'name' ? 'asc' : 'desc' };
+    }
     renderInventoryTable();
   });
 });
+
+function getSortedInventory() {
+  const { key, dir } = inventorySort;
+  const mult = dir === 'asc' ? 1 : -1;
+  return [...db.inventory].sort((a, b) => {
+    if (key === 'date') return (a.id - b.id) * mult; // item id is its creation timestamp
+    return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) * mult;
+  });
+}
 
 function renderInventoryTable() {
   const empty = document.getElementById('inventoryEmpty');
@@ -707,15 +721,14 @@ function renderInventoryTable() {
   if (!db.inventory.length) { empty.style.display = 'block'; table.style.display = 'none'; return; }
   empty.style.display = 'none'; table.style.display = 'table';
 
-  document.getElementById('sortArrow-invName').textContent = inventorySortDir === 'asc' ? '▲' : '▼';
+  document.getElementById('sortArrow-invDate').textContent = inventorySort.key === 'date' ? (inventorySort.dir === 'asc' ? '▲' : '▼') : '';
+  document.getElementById('sortArrow-invName').textContent = inventorySort.key === 'name' ? (inventorySort.dir === 'asc' ? '▲' : '▼') : '';
 
-  const mult = inventorySortDir === 'asc' ? 1 : -1;
-  const sorted = [...db.inventory].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) * mult);
-
-  document.querySelector('#inventoryTable tbody').innerHTML = sorted.map(i => {
+  document.querySelector('#inventoryTable tbody').innerHTML = getSortedInventory().map(i => {
     const lowStock = i.qtyOnHand <= 1;
     return `
     <tr class="${lowStock ? 'low-stock' : ''}">
+      <td>${new Date(i.id).toLocaleDateString()}</td>
       <td>${i.name}</td>
       <td>${i.qtyOnHand}${lowStock ? ' <span class="low-stock-badge">Low Stock</span>' : ''}</td>
       <td>${fmt(i.sellingPrice || 0)}</td>
@@ -803,8 +816,8 @@ function resetInventoryForm() {
 
 document.getElementById('exportInventoryCsvBtn').addEventListener('click', () => {
   if (!db.inventory.length) return;
-  const headers = ['Item', 'Qty on Shelf', 'Selling Price'];
-  const rows = db.inventory.map(i => [i.name, i.qtyOnHand, (i.sellingPrice || 0).toFixed(2)]
+  const headers = ['Date Added', 'Item', 'Qty on Shelf', 'Selling Price'];
+  const rows = db.inventory.map(i => [new Date(i.id).toLocaleDateString(), i.name, i.qtyOnHand, (i.sellingPrice || 0).toFixed(2)]
     .map(v => `"${String(v).replace(/"/g, '""')}"`));
   const csv  = [headers, ...rows].map(r => r.join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
