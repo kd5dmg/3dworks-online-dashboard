@@ -688,15 +688,32 @@ function addToInventory(name, qty) {
   else db.inventory.push({ id: Date.now(), name, qtyOnHand: qty });
 }
 
+let inventorySortDir = 'asc';
+
+document.querySelectorAll('#inventoryTable th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    inventorySortDir = inventorySortDir === 'asc' ? 'desc' : 'asc';
+    renderInventoryTable();
+  });
+});
+
 function renderInventoryTable() {
   const empty = document.getElementById('inventoryEmpty');
   const table = document.getElementById('inventoryTable');
   if (!db.inventory.length) { empty.style.display = 'block'; table.style.display = 'none'; return; }
   empty.style.display = 'none'; table.style.display = 'table';
-  document.querySelector('#inventoryTable tbody').innerHTML = db.inventory.map(i => `
-    <tr>
+
+  document.getElementById('sortArrow-invName').textContent = inventorySortDir === 'asc' ? '▲' : '▼';
+
+  const mult = inventorySortDir === 'asc' ? 1 : -1;
+  const sorted = [...db.inventory].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) * mult);
+
+  document.querySelector('#inventoryTable tbody').innerHTML = sorted.map(i => {
+    const lowStock = i.qtyOnHand < 1;
+    return `
+    <tr class="${lowStock ? 'low-stock' : ''}">
       <td>${i.name}</td>
-      <td>${i.qtyOnHand}</td>
+      <td>${i.qtyOnHand}${lowStock ? ' <span class="low-stock-badge">Low Stock</span>' : ''}</td>
       <td>
         <input type="number" id="invAdjust-${i.id}" min="1" step="1" value="1" style="width:64px" />
         <button class="btn-secondary" onclick="addToInventoryRow(${i.id})">+ Add More</button>
@@ -707,7 +724,8 @@ function renderInventoryTable() {
         <button class="icon-btn del" onclick="deleteInventory(${i.id})">🗑</button>
       </td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 }
 
 window.addToInventoryRow = (id) => {

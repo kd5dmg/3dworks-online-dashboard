@@ -191,6 +191,8 @@ button { cursor: pointer; font-family: inherit; }
 .sort-arrow { display: inline-block; width: 8px; color: var(--accent); font-size: 9px; }
 .data-table td { padding: 9px 9px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .data-table tr:last-child td { border-bottom: none; }
+.data-table tr.low-stock td { background: rgba(240,82,82,.07); }
+.low-stock-badge { display: inline-block; margin-left: 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; padding: 2px 8px; border-radius: 20px; background: rgba(240,82,82,.15); color: var(--red); }
 .data-table tr:hover td { background: rgba(255,255,255,.02); }
 .badge-profit { color: var(--green); font-weight: 600; }
 
