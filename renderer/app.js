@@ -42,6 +42,7 @@ async function init() {
   }
   if (!db.quotes) db.quotes = [];
   if (!db.inventory) db.inventory = [];
+  if (!db.printQueue) db.printQueue = [];
 
   await persist();
 
@@ -55,6 +56,7 @@ async function init() {
   renderHistory();
   renderQuotes();
   renderInventoryTable();
+  renderPrintQueueTable();
   renderDashboard();
   renderPrinterStatuses();
   setInterval(renderPrinterStatuses, 5000);
@@ -736,6 +738,7 @@ function renderInventoryTable() {
         <input type="number" id="invAdjust-${i.id}" min="1" step="1" value="1" style="width:64px" />
         <button class="btn-secondary" onclick="addToInventoryRow(${i.id})">+ Add More</button>
         <button class="btn-secondary" onclick="takeFromInventory(${i.id})">Take to Store / Sold</button>
+        <button class="btn-secondary" onclick="addToPrintQueueFromInventory(${i.id})">📋 Need to Print</button>
       </td>
       <td>
         <button class="icon-btn" onclick="editInventory(${i.id})">✏️</button>
@@ -826,6 +829,99 @@ document.getElementById('exportInventoryCsvBtn').addEventListener('click', () =>
   a.href = url; a.download = `inventory-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click(); URL.revokeObjectURL(url);
 });
+
+// ── Print Queue ───────────────────────────────────────────────────────────────
+function addToPrintQueue(name, qty) {
+  qty = parseInt(qty) || 0;
+  if (qty <= 0) return;
+  const existing = db.printQueue.find(p => p.name.toLowerCase() === name.toLowerCase());
+  if (existing) existing.qtyNeeded += qty;
+  else db.printQueue.push({ id: Date.now(), name, qtyNeeded: qty });
+}
+
+window.addToPrintQueueFromInventory = (id) => {
+  const item = getById(db.inventory, id);
+  if (!item) return;
+  const qty = parseInt(document.getElementById(`invAdjust-${id}`).value) || 0;
+  if (qty <= 0) return;
+  addToPrintQueue(item.name, qty);
+  persist();
+  renderPrintQueueTable();
+};
+
+function renderPrintQueueTable() {
+  const empty = document.getElementById('printQueueEmpty');
+  const table = document.getElementById('printQueueTable');
+  if (!db.printQueue.length) { empty.style.display = 'block'; table.style.display = 'none'; return; }
+  empty.style.display = 'none'; table.style.display = 'table';
+
+  document.querySelector('#printQueueTable tbody').innerHTML = db.printQueue.map(p => `
+    <tr>
+      <td>${p.name}</td>
+      <td>${p.qtyNeeded}</td>
+      <td>
+        <button class="btn-primary" onclick="markPrinted(${p.id})">✅ Printed</button>
+        <button class="icon-btn" onclick="editPrintQueue(${p.id})">✏️</button>
+        <button class="icon-btn del" onclick="deletePrintQueue(${p.id})">🗑</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+window.markPrinted = (id) => {
+  const p = getById(db.printQueue, id);
+  if (!p) return;
+  addToInventory(p.name, p.qtyNeeded);
+  db.printQueue = db.printQueue.filter(x => x.id !== Number(id));
+  persist();
+  renderInventoryTable();
+  renderPrintQueueTable();
+};
+
+window.editPrintQueue = (id) => {
+  const p = getById(db.printQueue, id);
+  document.getElementById('pqEditId').value = p.id;
+  document.getElementById('pqName').value   = p.name;
+  document.getElementById('pqQty').value    = p.qtyNeeded;
+  document.getElementById('pqSaveBtn').textContent     = 'Update Item';
+  document.getElementById('pqCancelBtn').style.display = 'inline-block';
+  document.getElementById('pqName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.getElementById('pqName').focus();
+};
+
+window.deletePrintQueue = (id) => {
+  if (!confirm('Remove this item from the print queue?')) return;
+  db.printQueue = db.printQueue.filter(p => p.id !== Number(id));
+  persist(); renderPrintQueueTable();
+};
+
+document.getElementById('pqSaveBtn').addEventListener('click', () => {
+  const id   = document.getElementById('pqEditId').value;
+  const name = document.getElementById('pqName').value.trim();
+  const qty  = parseInt(document.getElementById('pqQty').value);
+  if (!name || isNaN(qty) || qty <= 0) return;
+  if (id) {
+    const p = getById(db.printQueue, id);
+    p.name = name; p.qtyNeeded = qty;
+  } else {
+    addToPrintQueue(name, qty);
+  }
+  persist(); renderPrintQueueTable(); resetPrintQueueForm();
+
+  const toast = document.getElementById('printQueueToast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+});
+
+document.getElementById('pqCancelBtn').addEventListener('click', resetPrintQueueForm);
+
+function resetPrintQueueForm() {
+  document.getElementById('pqEditId').value = '';
+  document.getElementById('pqName').value   = '';
+  document.getElementById('pqQty').value    = '';
+  document.getElementById('pqSaveBtn').textContent     = 'Add Item';
+  document.getElementById('pqCancelBtn').style.display = 'none';
+}
 
 // ── Printers ──────────────────────────────────────────────────────────────────
 const PLATFORM_LABELS = { octoprint: 'OctoPrint', bambu: 'Bambu Lab', moonraker: 'Moonraker' };

@@ -22,6 +22,7 @@
         <button class="tab-btn" data-tab="printers">Printers</button>
         <button class="tab-btn" data-tab="quotes">Quotes</button>
         <button class="tab-btn" data-tab="inventory">Inventory</button>
+        <button class="tab-btn" data-tab="print-queue">Print Queue</button>
         <button class="tab-btn" data-tab="filament-storage">Filament Storage</button>
         <button class="tab-btn" data-tab="settings">Settings</button>
         <button class="tab-btn" data-tab="history">History</button>
@@ -463,6 +464,31 @@
           <button class="btn-primary" id="invSaveBtn">Add Item</button>
           <button class="btn-secondary" id="invCancelBtn" style="display:none">Cancel</button>
           <div class="toast" id="inventoryToast">Saved!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRINT QUEUE TAB -->
+    <div id="tab-print-queue" class="tab">
+      <div class="card">
+        <h2>Print Queue</h2>
+        <p class="hint" style="margin-bottom:14px">Items that need to be printed to replace what's sold. Add items from the Inventory tab, then mark them printed here to add the quantity back into stock.</p>
+        <div id="printQueueEmpty" class="result-empty">Nothing queued — add an item from the Inventory tab, or add one below.</div>
+        <div class="table-scroll">
+          <table class="data-table" id="printQueueTable" style="display:none">
+            <thead><tr><th>Item</th><th>Qty Needed</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <hr />
+        <h3>Add / Edit Item</h3>
+        <div class="inline-form">
+          <input type="hidden" id="pqEditId" />
+          <input type="text" id="pqName" placeholder="e.g. Highland Cow Pen Holder" />
+          <input type="number" id="pqQty" placeholder="Qty needed" min="1" step="1" />
+          <button class="btn-primary" id="pqSaveBtn">Add Item</button>
+          <button class="btn-secondary" id="pqCancelBtn" style="display:none">Cancel</button>
+          <div class="toast" id="printQueueToast">Saved!</div>
         </div>
       </div>
     </div>
