@@ -36,6 +36,20 @@
         <div class="printer-status-grid" id="printerStatusGrid"></div>
       </div>
 
+      <div class="card dash-card" style="margin-bottom:14px">
+        <h2>Quick Links</h2>
+        <div id="quickLinksEmpty" class="result-empty">No links yet — add one below.</div>
+        <div class="quick-links-grid" id="quickLinksGrid"></div>
+        <hr />
+        <div class="inline-form">
+          <input type="hidden" id="qlEditId" />
+          <input type="text" id="qlLabel" placeholder="Label (e.g. Etsy Shop)" />
+          <input type="text" id="qlUrl" placeholder="https://example.com" />
+          <button class="btn-primary" id="qlSaveBtn">Add Link</button>
+          <button class="btn-secondary" id="qlCancelBtn" style="display:none">Cancel</button>
+        </div>
+      </div>
+
       <div class="dashboard-grid">
         <div class="stat-card">
           <div class="stat-label">Total Jobs</div>

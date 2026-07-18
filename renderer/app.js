@@ -43,6 +43,7 @@ async function init() {
   if (!db.quotes) db.quotes = [];
   if (!db.inventory) db.inventory = [];
   if (!db.printQueue) db.printQueue = [];
+  if (!db.quickLinks) db.quickLinks = [];
 
   await persist();
 
@@ -57,6 +58,7 @@ async function init() {
   renderQuotes();
   renderInventoryTable();
   renderPrintQueueTable();
+  renderQuickLinks();
   renderDashboard();
   renderPrinterStatuses();
   setInterval(renderPrinterStatuses, 5000);
@@ -260,6 +262,68 @@ async function renderHaSensors() {
         <div class="ha-grid">${cardsHtml}</div>
       </div>`;
   }).join('');
+}
+
+// ── Quick Links ────────────────────────────────────────────────────────────────
+function normalizeUrl(url) {
+  url = url.trim();
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  return url;
+}
+
+function renderQuickLinks() {
+  const empty = document.getElementById('quickLinksEmpty');
+  const grid  = document.getElementById('quickLinksGrid');
+  if (!db.quickLinks.length) { empty.style.display = 'block'; grid.innerHTML = ''; return; }
+  empty.style.display = 'none';
+
+  grid.innerHTML = db.quickLinks.map(l => `
+    <div class="quick-link-item">
+      <a href="${l.url}" target="_blank" rel="noopener noreferrer">${l.label}</a>
+      <button class="icon-btn" onclick="editQuickLink(${l.id})">✏️</button>
+      <button class="icon-btn del" onclick="deleteQuickLink(${l.id})">🗑</button>
+    </div>
+  `).join('');
+}
+
+document.getElementById('qlSaveBtn').addEventListener('click', () => {
+  const id    = document.getElementById('qlEditId').value;
+  const label = document.getElementById('qlLabel').value.trim();
+  const url   = document.getElementById('qlUrl').value.trim();
+  if (!label || !url) return;
+  const normalized = normalizeUrl(url);
+  if (id) {
+    const l = getById(db.quickLinks, id);
+    l.label = label; l.url = normalized;
+  } else {
+    db.quickLinks.push({ id: Date.now(), label, url: normalized });
+  }
+  persist(); renderQuickLinks(); resetQuickLinkForm();
+});
+
+window.editQuickLink = (id) => {
+  const l = getById(db.quickLinks, id);
+  document.getElementById('qlEditId').value = l.id;
+  document.getElementById('qlLabel').value  = l.label;
+  document.getElementById('qlUrl').value    = l.url;
+  document.getElementById('qlSaveBtn').textContent     = 'Update Link';
+  document.getElementById('qlCancelBtn').style.display = 'inline-block';
+};
+
+window.deleteQuickLink = (id) => {
+  if (!confirm('Delete this link?')) return;
+  db.quickLinks = db.quickLinks.filter(l => l.id !== Number(id));
+  persist(); renderQuickLinks();
+};
+
+document.getElementById('qlCancelBtn').addEventListener('click', resetQuickLinkForm);
+
+function resetQuickLinkForm() {
+  document.getElementById('qlEditId').value = '';
+  document.getElementById('qlLabel').value  = '';
+  document.getElementById('qlUrl').value    = '';
+  document.getElementById('qlSaveBtn').textContent     = 'Add Link';
+  document.getElementById('qlCancelBtn').style.display = 'none';
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────

@@ -131,6 +131,13 @@ button { cursor: pointer; font-family: inherit; }
 .ps-detail { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--text-muted); padding: 2px 0; }
 .ps-detail span:last-child { color: var(--text); font-variant-numeric: tabular-nums; }
 
+/* Quick Links */
+.quick-links-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.quick-link-item { display: flex; align-items: center; gap: 2px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 6px 6px 16px; }
+.quick-link-item a { color: var(--text); text-decoration: none; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.quick-link-item a:hover { color: var(--accent); }
+.quick-link-item .icon-btn { font-size: 12px; padding: 3px 5px; }
+
 /* Home Assistant / Filament Storage */
 .ha-section { margin-bottom: 22px; }
 .ha-section:last-child { margin-bottom: 0; }
