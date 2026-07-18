@@ -729,7 +729,7 @@ function renderInventoryTable() {
   document.querySelector('#inventoryTable tbody').innerHTML = getSortedInventory().map(i => {
     const lowStock = i.qtyOnHand <= 1;
     return `
-    <tr class="${lowStock ? 'low-stock' : ''}">
+    <tr class="${lowStock ? 'low-stock' : ''}" data-inv-id="${i.id}">
       <td>${new Date(i.id).toLocaleDateString()}</td>
       <td>${i.name}</td>
       <td>${i.qtyOnHand}${lowStock ? ' <span class="low-stock-badge">Low Stock</span>' : ''}</td>
@@ -738,7 +738,7 @@ function renderInventoryTable() {
         <input type="number" id="invAdjust-${i.id}" min="1" step="1" value="1" style="width:64px" />
         <button class="btn-secondary" onclick="addToInventoryRow(${i.id})">+ Add More</button>
         <button class="btn-secondary" onclick="takeFromInventory(${i.id})">Take to Store / Sold</button>
-        <button class="btn-secondary" onclick="addToPrintQueueFromInventory(${i.id})">📋 Need to Print</button>
+        <button class="btn-secondary" onclick="addToPrintQueueFromInventory(${i.id}, this)">📋 Need to Print</button>
       </td>
       <td>
         <button class="icon-btn" onclick="editInventory(${i.id})">✏️</button>
@@ -749,6 +749,13 @@ function renderInventoryTable() {
   }).join('');
 }
 
+function flashInventoryRow(id) {
+  const row = document.querySelector(`#inventoryTable tr[data-inv-id="${id}"]`);
+  if (!row) return;
+  row.classList.add('flash');
+  setTimeout(() => row.classList.remove('flash'), 900);
+}
+
 window.addToInventoryRow = (id) => {
   const item = getById(db.inventory, id);
   if (!item) return;
@@ -757,6 +764,7 @@ window.addToInventoryRow = (id) => {
   item.qtyOnHand += qty;
   persist();
   renderInventoryTable();
+  flashInventoryRow(id);
 };
 
 window.takeFromInventory = (id) => {
@@ -767,6 +775,7 @@ window.takeFromInventory = (id) => {
   item.qtyOnHand = Math.max(0, item.qtyOnHand - qty);
   persist();
   renderInventoryTable();
+  flashInventoryRow(id);
 };
 
 document.getElementById('invSaveBtn').addEventListener('click', () => {
@@ -839,7 +848,7 @@ function addToPrintQueue(name, qty) {
   else db.printQueue.push({ id: Date.now(), name, qtyNeeded: qty });
 }
 
-window.addToPrintQueueFromInventory = (id) => {
+window.addToPrintQueueFromInventory = (id, btn) => {
   const item = getById(db.inventory, id);
   if (!item) return;
   const qty = parseInt(document.getElementById(`invAdjust-${id}`).value) || 0;
@@ -847,6 +856,11 @@ window.addToPrintQueueFromInventory = (id) => {
   addToPrintQueue(item.name, qty);
   persist();
   renderPrintQueueTable();
+  if (btn) {
+    const original = btn.textContent;
+    btn.textContent = `✓ Queued (${qty})`;
+    setTimeout(() => { btn.textContent = original; }, 1200);
+  }
 };
 
 function renderPrintQueueTable() {
@@ -876,6 +890,11 @@ window.markPrinted = (id) => {
   persist();
   renderInventoryTable();
   renderPrintQueueTable();
+
+  const toast = document.getElementById('printQueueToast');
+  toast.textContent = `Added ${p.qtyNeeded} × "${p.name}" to Inventory!`;
+  toast.classList.add('show');
+  setTimeout(() => { toast.classList.remove('show'); toast.textContent = 'Saved!'; }, 2200);
 };
 
 window.editPrintQueue = (id) => {
