@@ -271,6 +271,14 @@ function normalizeUrl(url) {
   return url;
 }
 
+let quickLinksEditMode = false;
+
+document.getElementById('qlEditModeToggle').addEventListener('change', (e) => {
+  quickLinksEditMode = e.target.checked;
+  document.getElementById('quickLinksForm').style.display = quickLinksEditMode ? 'block' : 'none';
+  renderQuickLinks();
+});
+
 function renderQuickLinks() {
   const empty = document.getElementById('quickLinksEmpty');
   const grid  = document.getElementById('quickLinksGrid');
@@ -280,8 +288,10 @@ function renderQuickLinks() {
   grid.innerHTML = db.quickLinks.map(l => `
     <div class="quick-link-item">
       <a href="${l.url}" target="_blank" rel="noopener noreferrer">${l.label}</a>
-      <button class="icon-btn" onclick="editQuickLink(${l.id})">✏️</button>
-      <button class="icon-btn del" onclick="deleteQuickLink(${l.id})">🗑</button>
+      ${quickLinksEditMode ? `
+        <button class="icon-btn" onclick="editQuickLink(${l.id})">✏️</button>
+        <button class="icon-btn del" onclick="deleteQuickLink(${l.id})">🗑</button>
+      ` : ''}
     </div>
   `).join('');
 }

@@ -138,6 +138,14 @@ button { cursor: pointer; font-family: inherit; }
 .quick-link-item a:hover { color: var(--accent); }
 .quick-link-item .icon-btn { font-size: 12px; padding: 3px 5px; }
 
+/* Toggle switch */
+.toggle-switch { position: relative; display: inline-block; width: 38px; height: 20px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; cursor: pointer; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; transition: background .15s, border-color .15s; }
+.toggle-slider::before { content: ""; position: absolute; height: 14px; width: 14px; left: 2px; bottom: 2px; background: var(--text-muted); border-radius: 50%; transition: transform .15s, background .15s; }
+.toggle-switch input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); background: #fff; }
+
 /* Home Assistant / Filament Storage */
 .ha-section { margin-bottom: 22px; }
 .ha-section:last-child { margin-bottom: 0; }

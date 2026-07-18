@@ -37,16 +37,24 @@
       </div>
 
       <div class="card dash-card" style="margin-bottom:14px">
-        <h2>Quick Links</h2>
+        <div class="history-header">
+          <h2>Quick Links</h2>
+          <label class="toggle-switch" title="Show/hide link management">
+            <input type="checkbox" id="qlEditModeToggle" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
         <div id="quickLinksEmpty" class="result-empty">No links yet — add one below.</div>
         <div class="quick-links-grid" id="quickLinksGrid"></div>
-        <hr />
-        <div class="inline-form">
-          <input type="hidden" id="qlEditId" />
-          <input type="text" id="qlLabel" placeholder="Label (e.g. Etsy Shop)" />
-          <input type="text" id="qlUrl" placeholder="https://example.com" />
-          <button class="btn-primary" id="qlSaveBtn">Add Link</button>
-          <button class="btn-secondary" id="qlCancelBtn" style="display:none">Cancel</button>
+        <div id="quickLinksForm" style="display:none">
+          <hr />
+          <div class="inline-form">
+            <input type="hidden" id="qlEditId" />
+            <input type="text" id="qlLabel" placeholder="Label (e.g. Etsy Shop)" />
+            <input type="text" id="qlUrl" placeholder="https://example.com" />
+            <button class="btn-primary" id="qlSaveBtn">Add Link</button>
+            <button class="btn-secondary" id="qlCancelBtn" style="display:none">Cancel</button>
+          </div>
         </div>
       </div>
 
