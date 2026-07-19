@@ -623,8 +623,9 @@ document.getElementById('saveBtn').addEventListener('click', () => {
   const r = document.getElementById('calcBtn')._lastResult;
   if (!r) return;
   const job = document.getElementById('jobName').value.trim() || '—';
-  db.history.unshift({ id: Date.now(), date: new Date().toLocaleDateString(), job, ...r, ...resolvedPricing(r) });
-  if (job !== '—') addToInventory(job, r.items, r.discount ? r.discountedPrice : r.price);
+  const resolved = { ...r, ...resolvedPricing(r) };
+  db.history.unshift({ id: Date.now(), date: new Date().toLocaleDateString(), job, ...resolved });
+  if (job !== '—') addToInventory(job, resolved.items, resolved.discount ? resolved.discountedPrice : resolved.price);
   persist();
   renderHistory();
   renderInventoryTable();
