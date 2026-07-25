@@ -45,6 +45,17 @@ async function init() {
   if (!db.printQueue) db.printQueue = [];
   if (!db.quickLinks) db.quickLinks = [];
 
+  // Migrate: printer web-interface links used to be hardcoded by name; move
+  // them onto each printer so new printers can set their own.
+  const LEGACY_PRINTER_LINKS = {
+    'Bambu P2S': 'http://192.168.0.149:8000',
+    'H2C': 'http://192.168.0.149:8000',
+    'Snapmaker U1': 'http://192.168.0.80'
+  };
+  db.printers.forEach(p => {
+    if (!p.webLink && LEGACY_PRINTER_LINKS[p.name]) p.webLink = LEGACY_PRINTER_LINKS[p.name];
+  });
+
   await persist();
 
   renderPrinterSelect();
@@ -106,12 +117,6 @@ function fmtDuration(min) {
   return h ? `${h}h ${m}m` : `${m}m`;
 }
 
-const PRINTER_LINKS = {
-  'Bambu P2S': 'http://192.168.0.149:8000',
-  'H2C': 'http://192.168.0.149:8000',
-  'Snapmaker U1': 'http://192.168.0.80'
-};
-
 async function renderPrinterStatuses() {
   const grid = document.getElementById('printerStatusGrid');
   if (!grid || !db) return;
@@ -132,7 +137,7 @@ async function renderPrinterStatuses() {
     const s = statuses[p.id] || { state: 'Not configured' };
     const cls = classifyState(s.state);
     const hasProgress = s.progress != null;
-    const link = PRINTER_LINKS[p.name];
+    const link = p.webLink;
     return `
       <div class="printer-status-card">
         <div class="ps-name">
@@ -1048,6 +1053,7 @@ document.getElementById('prnSaveBtn').addEventListener('click', () => {
   const name     = document.getElementById('prnName').value.trim();
   const watts    = parseFloat(document.getElementById('prnWatts').value);
   const maint    = parseFloat(document.getElementById('prnMaint').value);
+  const webLink  = document.getElementById('prnWebLink').value.trim();
   const platform = document.getElementById('prnPlatform').value;
   if (!name || isNaN(watts) || isNaN(maint)) return;
 
@@ -1071,10 +1077,10 @@ document.getElementById('prnSaveBtn').addEventListener('click', () => {
 
   if (id) {
     const p = getById(db.printers, id);
-    p.name = name; p.watts = watts; p.maintenancePerHour = maint;
+    p.name = name; p.watts = watts; p.maintenancePerHour = maint; p.webLink = webLink;
     p.platform = platform; p.octoprint = octoprint; p.bambu = bambu; p.moonraker = moonraker;
   } else {
-    db.printers.push({ id: Date.now(), name, watts, maintenancePerHour: maint, platform, octoprint, bambu, moonraker });
+    db.printers.push({ id: Date.now(), name, watts, maintenancePerHour: maint, webLink, platform, octoprint, bambu, moonraker });
   }
   persist(); renderPrinterTable(); renderPrinterSelect(); resetPrinterForm(); renderPrinterStatuses();
 });
@@ -1085,6 +1091,7 @@ window.editPrinter = (id) => {
   document.getElementById('prnName').value   = p.name;
   document.getElementById('prnWatts').value  = p.watts;
   document.getElementById('prnMaint').value  = p.maintenancePerHour;
+  document.getElementById('prnWebLink').value = p.webLink || '';
   document.getElementById('prnPlatform').value = p.platform || '';
   document.getElementById('prnOctoHost').value  = (p.octoprint && p.octoprint.host) || '';
   document.getElementById('prnOctoPort').value  = (p.octoprint && p.octoprint.port) || '';
@@ -1116,6 +1123,7 @@ function resetPrinterForm() {
   document.getElementById('prnName').value   = '';
   document.getElementById('prnWatts').value  = '';
   document.getElementById('prnMaint').value  = '';
+  document.getElementById('prnWebLink').value = '';
   document.getElementById('prnPlatform').value = '';
   document.getElementById('prnOctoHost').value = '';
   document.getElementById('prnOctoPort').value = '';
