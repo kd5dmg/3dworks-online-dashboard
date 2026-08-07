@@ -645,10 +645,13 @@ document.getElementById('saveQuoteBtn').addEventListener('click', () => {
   if (!document.getElementById('calcBtn')._lastResult) return;
   // Default valid-until to 30 days from now
   const d = new Date(); d.setDate(d.getDate() + 30);
+  document.getElementById('qEditId').value    = '';
   document.getElementById('qValidUntil').value = d.toISOString().slice(0, 10);
   document.getElementById('qCustomer').value   = '';
   document.getElementById('qNotes').value      = '';
   document.getElementById('qQty').value        = 1;
+  document.getElementById('quoteModalTitle').textContent = 'Save as Quote';
+  document.getElementById('qConfirmBtn').textContent     = 'Save Quote';
   document.getElementById('quoteModal').style.display = 'flex';
 });
 
@@ -657,11 +660,26 @@ document.getElementById('qCancelBtn').addEventListener('click', () => {
 });
 
 document.getElementById('qConfirmBtn').addEventListener('click', () => {
-  const r        = { ...document.getElementById('calcBtn')._lastResult, ...resolvedPricing(document.getElementById('calcBtn')._lastResult) };
+  const editId   = document.getElementById('qEditId').value;
   const customer = document.getElementById('qCustomer').value.trim() || 'Customer';
   const qty      = parseInt(document.getElementById('qQty').value) || 1;
   const validUntil = document.getElementById('qValidUntil').value;
   const notes    = document.getElementById('qNotes').value.trim();
+
+  if (editId) {
+    const q = db.quotes.find(x => x.id === Number(editId));
+    if (q) Object.assign(q, {
+      customer, qty, notes,
+      validUntil: validUntil ? new Date(validUntil).toLocaleDateString() : '—'
+    });
+    persist();
+    renderQuotes();
+    renderDashboard();
+    document.getElementById('quoteModal').style.display = 'none';
+    return;
+  }
+
+  const r = { ...document.getElementById('calcBtn')._lastResult, ...resolvedPricing(document.getElementById('calcBtn')._lastResult) };
   const quoteNum = 'Q-' + Date.now().toString().slice(-6);
 
   db.quotes.unshift({
@@ -705,12 +723,32 @@ function renderQuotes() {
       <td>${q.validUntil}</td>
       <td>
         <button class="icon-btn" onclick="viewQuote(${q.id})" title="View/Print">🖨</button>
+        <button class="icon-btn" onclick="editQuote(${q.id})" title="Edit">✏️</button>
         <button class="icon-btn del" onclick="deleteQuote(${q.id})" title="Delete">🗑</button>
       </td>
     </tr>
   `;
   }).join('');
 }
+
+window.editQuote = (id) => {
+  const q = db.quotes.find(x => x.id === id);
+  if (!q) return;
+
+  document.getElementById('qEditId').value   = q.id;
+  document.getElementById('qCustomer').value = q.customer === 'Customer' ? '' : q.customer;
+  document.getElementById('qQty').value      = q.qty || 1;
+  document.getElementById('qNotes').value    = q.notes || '';
+
+  // q.validUntil is stored as a locale date string (e.g. "9/5/2026"); convert
+  // back to yyyy-mm-dd for the date input, if parseable.
+  const parsed = q.validUntil && q.validUntil !== '—' ? new Date(q.validUntil) : null;
+  document.getElementById('qValidUntil').value = parsed && !isNaN(parsed) ? parsed.toISOString().slice(0, 10) : '';
+
+  document.getElementById('quoteModalTitle').textContent = 'Edit Quote';
+  document.getElementById('qConfirmBtn').textContent     = 'Update Quote';
+  document.getElementById('quoteModal').style.display = 'flex';
+};
 
 window.viewQuote = (id) => {
   const q = db.quotes.find(x => x.id === id);

@@ -607,7 +607,8 @@
   <!-- SAVE AS QUOTE MODAL -->
   <div class="modal-overlay" id="quoteModal" style="display:none">
     <div class="modal">
-      <h2>Save as Quote</h2>
+      <h2 id="quoteModalTitle">Save as Quote</h2>
+      <input type="hidden" id="qEditId" />
       <div class="field">
         <label>Customer name</label>
         <input type="text" id="qCustomer" placeholder="e.g. Jane Smith" />
