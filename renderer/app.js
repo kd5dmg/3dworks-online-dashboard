@@ -648,6 +648,7 @@ document.getElementById('saveQuoteBtn').addEventListener('click', () => {
   document.getElementById('qValidUntil').value = d.toISOString().slice(0, 10);
   document.getElementById('qCustomer').value   = '';
   document.getElementById('qNotes').value      = '';
+  document.getElementById('qQty').value        = 1;
   document.getElementById('quoteModal').style.display = 'flex';
 });
 
@@ -658,6 +659,7 @@ document.getElementById('qCancelBtn').addEventListener('click', () => {
 document.getElementById('qConfirmBtn').addEventListener('click', () => {
   const r        = { ...document.getElementById('calcBtn')._lastResult, ...resolvedPricing(document.getElementById('calcBtn')._lastResult) };
   const customer = document.getElementById('qCustomer').value.trim() || 'Customer';
+  const qty      = parseInt(document.getElementById('qQty').value) || 1;
   const validUntil = document.getElementById('qValidUntil').value;
   const notes    = document.getElementById('qNotes').value.trim();
   const quoteNum = 'Q-' + Date.now().toString().slice(-6);
@@ -666,7 +668,7 @@ document.getElementById('qConfirmBtn').addEventListener('click', () => {
     id: Date.now(), quoteNum,
     date: new Date().toLocaleDateString(),
     validUntil: validUntil ? new Date(validUntil).toLocaleDateString() : '—',
-    customer, notes,
+    customer, notes, qty,
     job: document.getElementById('jobName').value.trim() || '—',
     ...r
   });
@@ -690,19 +692,24 @@ function renderQuotes() {
     empty.style.display = 'block'; table.style.display = 'none'; return;
   }
   empty.style.display = 'none'; table.style.display = 'table';
-  document.getElementById('quotesBody').innerHTML = db.quotes.map(q => `
+  document.getElementById('quotesBody').innerHTML = db.quotes.map(q => {
+    const qty = q.qty || 1;
+    const unitPrice = q.discount ? q.discountedPrice : q.price;
+    return `
     <tr>
       <td>${q.date}</td>
       <td>${q.customer}</td>
       <td>${q.job}</td>
-      <td>${fmt(q.discount ? q.discountedPrice : q.price)}</td>
+      <td>${qty}</td>
+      <td>${fmt(unitPrice * qty)}</td>
       <td>${q.validUntil}</td>
       <td>
         <button class="icon-btn" onclick="viewQuote(${q.id})" title="View/Print">🖨</button>
         <button class="icon-btn del" onclick="deleteQuote(${q.id})" title="Delete">🗑</button>
       </td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 }
 
 window.viewQuote = (id) => {
@@ -727,10 +734,13 @@ window.viewQuote = (id) => {
   document.getElementById('qp-price').textContent       = fmt(q.price);
 
   const hasDiscount = q.discount > 0;
+  const qty = q.qty || 1;
+  const unitPrice = hasDiscount ? q.discountedPrice : q.price;
   document.getElementById('qp-discountRow').style.display = hasDiscount ? 'flex' : 'none';
   document.getElementById('qp-discountPct').textContent   = q.discount || 0;
   document.getElementById('qp-discountAmt').textContent   = hasDiscount ? '−' + fmt(q.discountAmt) : '';
-  document.getElementById('qp-finalPrice').textContent    = fmt(hasDiscount ? q.discountedPrice : q.price);
+  document.getElementById('qp-qty').textContent           = qty;
+  document.getElementById('qp-finalPrice').textContent    = fmt(unitPrice * qty);
 
   const hasNotes = q.notes && q.notes.trim();
   document.getElementById('qp-notesRow').style.display = hasNotes ? 'block' : 'none';
