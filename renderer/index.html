@@ -59,6 +59,21 @@
         </div>
       </div>
 
+      <div class="card dash-card" style="margin-bottom:14px">
+        <h2>Consignment Sales</h2>
+        <div id="consignmentEmpty" class="result-empty">Not configured yet — add your Consignment Dashboard URL in the Settings tab.</div>
+        <div id="consignmentContent" style="display:none">
+          <div class="consignment-stores" id="consignmentStores"></div>
+          <h3 style="margin-top:18px">Recent Sales</h3>
+          <div class="table-scroll">
+            <table class="data-table" id="consignmentRecentTable">
+              <thead><tr><th>Date</th><th>Store</th><th>Item</th><th>Sale Price</th><th>Your Cut</th></tr></thead>
+              <tbody id="consignmentRecentBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <div class="dashboard-grid">
         <div class="stat-card">
           <div class="stat-label">Total Jobs</div>
@@ -562,6 +577,17 @@
         </div>
         <button class="btn-primary" id="haSaveBtn">Save Home Assistant Settings</button>
         <div class="toast" id="haToast">Saved!</div>
+      </div>
+
+      <div class="card" style="max-width:480px; margin-top:14px">
+        <h2>Consignment Dashboard</h2>
+        <div class="field">
+          <label>Dashboard URL</label>
+          <input type="text" id="sConsignmentUrl" placeholder="https://192.168.0.93/consignment_dashboard.html" />
+          <span class="hint">Reads consignment_data.json from the same folder as this page.</span>
+        </div>
+        <button class="btn-primary" id="consignmentSaveBtn">Save Consignment Settings</button>
+        <div class="toast" id="consignmentToast">Saved!</div>
       </div>
 
       <div class="card" style="max-width:480px; margin-top:14px">

@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const https = require('https');
 const mqtt = require('mqtt');
 
 const PORT = process.env.PORT || 3141;
@@ -281,6 +282,38 @@ app.post('/api/ha-states', async (req, res) => {
   } catch (e) {
     clearTimeout(timeout);
     res.json({ error: 'Offline' });
+  }
+});
+
+// Fetches consignment_data.json from a self-signed-HTTPS local server (same
+// pattern as Bambu LAN mode: rejectUnauthorized:false to accept the cert).
+function fetchJsonInsecure(jsonUrl) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(jsonUrl, { rejectUnauthorized: false, timeout: 6000 }, (res) => {
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        res.resume();
+        return reject(new Error(`HTTP ${res.statusCode}`));
+      }
+      let body = '';
+      res.on('data', chunk => { body += chunk; });
+      res.on('end', () => {
+        try { resolve(JSON.parse(body)); } catch (e) { reject(e); }
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('Timed out')));
+    req.on('error', reject);
+  });
+}
+
+app.post('/api/consignment', async (req, res) => {
+  const { url } = req.body || {};
+  if (!url) return res.json({ error: 'Not configured' });
+  try {
+    const jsonUrl = new URL('consignment_data.json', url).toString();
+    const data = await fetchJsonInsecure(jsonUrl);
+    res.json({ data });
+  } catch (e) {
+    res.json({ error: e.message || 'Offline' });
   }
 });
 

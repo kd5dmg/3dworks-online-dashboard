@@ -146,6 +146,12 @@ button { cursor: pointer; font-family: inherit; }
 .toggle-switch input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); background: #fff; }
 
+/* Consignment Sales */
+.consignment-stores { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.consignment-store-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+.consignment-store-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.consignment-store-card .cs-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+
 /* Home Assistant / Filament Storage */
 .ha-section { margin-bottom: 22px; }
 .ha-section:last-child { margin-bottom: 0; }

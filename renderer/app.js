@@ -16,6 +16,11 @@ const api = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ entityIds, ha })
+  }).then(r => r.json()),
+  getConsignmentData: (url) => fetch('/api/consignment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url })
   }).then(r => r.json())
 };
 
@@ -75,6 +80,8 @@ async function init() {
   setInterval(renderPrinterStatuses, 5000);
   renderHaSensors();
   setInterval(renderHaSensors, 15000);
+  renderConsignmentSales();
+  setInterval(renderConsignmentSales, 300000);
 }
 
 async function persist() {
@@ -339,6 +346,71 @@ function resetQuickLinkForm() {
   document.getElementById('qlUrl').value    = '';
   document.getElementById('qlSaveBtn').textContent     = 'Add Link';
   document.getElementById('qlCancelBtn').style.display = 'none';
+}
+
+// ── Consignment Sales ─────────────────────────────────────────────────────────
+function latestMonthKey(months) {
+  const keys = Object.keys(months || {});
+  if (!keys.length) return null;
+  return keys.sort().slice(-1)[0];
+}
+
+async function renderConsignmentSales() {
+  const empty   = document.getElementById('consignmentEmpty');
+  const content = document.getElementById('consignmentContent');
+  const url = db.settings.consignmentUrl;
+  if (!url) {
+    content.style.display = 'none';
+    empty.style.display = 'block';
+    empty.textContent = 'Not configured yet — add your Consignment Dashboard URL in the Settings tab.';
+    return;
+  }
+
+  let resp;
+  try {
+    resp = await api.getConsignmentData(url);
+  } catch (e) {
+    resp = { error: 'Offline' };
+  }
+
+  if (resp.error) {
+    content.style.display = 'none';
+    empty.style.display = 'block';
+    empty.textContent = 'Consignment Dashboard: ' + resp.error;
+    return;
+  }
+  empty.style.display = 'none';
+  content.style.display = 'block';
+
+  const stores = (resp.data && resp.data.stores) || {};
+  const recentItems = [];
+
+  document.getElementById('consignmentStores').innerHTML = Object.values(stores).map(store => {
+    const mKey = latestMonthKey(store.months);
+    const m = mKey ? store.months[mKey] : null;
+    if (m) (m.items || []).forEach(it => recentItems.push({ storeName: store.store, ...it }));
+    return `
+      <div class="consignment-store-card">
+        <h4>${store.store}</h4>
+        <div class="cs-sub">${store.splitLabel || ''}${mKey ? ' · ' + mKey : ''}</div>
+        <div class="ps-detail"><span>Total Sales</span><span>${m ? fmt(m.totalSales) : '—'}</span></div>
+        <div class="ps-detail"><span>Your Cut</span><span>${m ? fmt(m.consignorPortion) : '—'}</span></div>
+        <div class="ps-detail"><span>Store Cut</span><span>${m ? fmt(m.storePortion) : '—'}</span></div>
+        <div class="ps-detail"><span>Items Sold</span><span>${m ? m.qty : '—'}</span></div>
+      </div>
+    `;
+  }).join('');
+
+  recentItems.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  document.getElementById('consignmentRecentBody').innerHTML = recentItems.slice(0, 10).map(it => `
+    <tr>
+      <td>${it.date || '—'}</td>
+      <td>${it.storeName}</td>
+      <td>${it.item}</td>
+      <td>${fmt(it.salePrice)}</td>
+      <td>${fmt(it.consignorPortion)}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="5" class="result-empty">No sales this month yet.</td></tr>';
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -1297,6 +1369,7 @@ function renderSettings() {
   const ha = db.settings.homeAssistant || {};
   document.getElementById('sHaUrl').value   = ha.baseUrl || '';
   document.getElementById('sHaToken').value = ha.token || '';
+  document.getElementById('sConsignmentUrl').value = db.settings.consignmentUrl || '';
 }
 
 document.getElementById('settingsSaveBtn').addEventListener('click', () => {
@@ -1316,6 +1389,15 @@ document.getElementById('haSaveBtn').addEventListener('click', () => {
   persist();
   renderHaSensors();
   const toast = document.getElementById('haToast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+});
+
+document.getElementById('consignmentSaveBtn').addEventListener('click', () => {
+  db.settings.consignmentUrl = document.getElementById('sConsignmentUrl').value.trim();
+  persist();
+  renderConsignmentSales();
+  const toast = document.getElementById('consignmentToast');
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 2000);
 });
