@@ -49,6 +49,7 @@ async function init() {
   if (!db.inventory) db.inventory = [];
   if (!db.printQueue) db.printQueue = [];
   if (!db.quickLinks) db.quickLinks = [];
+  if (!db.laserJobs) db.laserJobs = [];
 
   // Migrate: printer web-interface links used to be hardcoded by name; move
   // them onto each printer so new printers can set their own.
@@ -75,6 +76,7 @@ async function init() {
   renderInventoryTable();
   renderPrintQueueTable();
   renderQuickLinks();
+  renderLaserTable();
   renderDashboard();
   renderPrinterStatuses();
   setInterval(renderPrinterStatuses, 5000);
@@ -1140,6 +1142,126 @@ function resetPrintQueueForm() {
   document.getElementById('pqQty').value    = '';
   document.getElementById('pqSaveBtn').textContent     = 'Add Item';
   document.getElementById('pqCancelBtn').style.display = 'none';
+}
+
+// ── Laser ─────────────────────────────────────────────────────────────────────
+function laserLabel(j) {
+  return j.laser === 'Other' ? (j.laserOther || 'Other') : j.laser;
+}
+
+function toggleLaserOtherField() {
+  const isOther = document.getElementById('lzLaser').value === 'Other';
+  document.getElementById('lzLaserOtherWrap').style.display = isOther ? 'block' : 'none';
+}
+document.getElementById('lzLaser').addEventListener('change', toggleLaserOtherField);
+
+function renderLaserTable() {
+  const empty = document.getElementById('laserEmpty');
+  const table = document.getElementById('laserTable');
+  if (!db.laserJobs.length) { empty.style.display = 'block'; table.style.display = 'none'; return; }
+  empty.style.display = 'none'; table.style.display = 'table';
+
+  document.querySelector('#laserTable tbody').innerHTML = db.laserJobs.map(j => `
+    <tr>
+      <td>${j.product}</td>
+      <td>${j.material}</td>
+      <td>${laserLabel(j)}</td>
+      <td>${j.operation}</td>
+      <td>${j.power || '—'}${j.power ? '%' : ''}</td>
+      <td>${j.speed || '—'}</td>
+      <td>${j.passes || 1}</td>
+      <td>${j.updated ? new Date(j.updated).toLocaleDateString() : '—'}</td>
+      <td>
+        <button class="icon-btn" onclick="editLaserJob(${j.id})">✏️</button>
+        <button class="icon-btn del" onclick="deleteLaserJob(${j.id})">🗑</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+document.getElementById('lzSaveBtn').addEventListener('click', () => {
+  const id       = document.getElementById('lzEditId').value;
+  const product  = document.getElementById('lzProduct').value.trim();
+  const material = document.getElementById('lzMaterial').value.trim();
+  if (!product || !material) return;
+
+  const job = {
+    product, material,
+    laser: document.getElementById('lzLaser').value,
+    laserOther: document.getElementById('lzLaserOther').value.trim(),
+    operation: document.getElementById('lzOperation').value,
+    power: document.getElementById('lzPower').value.trim(),
+    speed: document.getElementById('lzSpeed').value.trim(),
+    passes: document.getElementById('lzPasses').value.trim() || '1',
+    focus: document.getElementById('lzFocus').value.trim(),
+    dpi: document.getElementById('lzDpi').value.trim(),
+    airAssist: document.getElementById('lzAirAssist').value,
+    frequency: document.getElementById('lzFrequency').value.trim(),
+    notes: document.getElementById('lzNotes').value.trim(),
+    updated: new Date().toISOString()
+  };
+
+  if (id) {
+    Object.assign(getById(db.laserJobs, id), job);
+  } else {
+    db.laserJobs.unshift({ id: Date.now(), ...job });
+  }
+  persist(); renderLaserTable(); resetLaserForm();
+
+  const toast = document.getElementById('laserToast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+});
+
+window.editLaserJob = (id) => {
+  const j = getById(db.laserJobs, id);
+  document.getElementById('lzEditId').value    = j.id;
+  document.getElementById('lzProduct').value   = j.product;
+  document.getElementById('lzMaterial').value  = j.material;
+  document.getElementById('lzLaser').value     = j.laser;
+  document.getElementById('lzLaserOther').value = j.laserOther || '';
+  document.getElementById('lzOperation').value = j.operation;
+  document.getElementById('lzPower').value     = j.power || '';
+  document.getElementById('lzSpeed').value     = j.speed || '';
+  document.getElementById('lzPasses').value    = j.passes || '1';
+  document.getElementById('lzFocus').value     = j.focus || '';
+  document.getElementById('lzDpi').value       = j.dpi || '';
+  document.getElementById('lzAirAssist').value = j.airAssist || 'On';
+  document.getElementById('lzFrequency').value = j.frequency || '';
+  document.getElementById('lzNotes').value     = j.notes || '';
+  toggleLaserOtherField();
+  document.getElementById('lzSaveBtn').textContent     = 'Update Job';
+  document.getElementById('lzCancelBtn').style.display = 'inline-block';
+  document.getElementById('lzProduct').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.getElementById('lzProduct').focus();
+};
+
+window.deleteLaserJob = (id) => {
+  if (!confirm('Delete this laser job?')) return;
+  db.laserJobs = db.laserJobs.filter(j => j.id !== Number(id));
+  persist(); renderLaserTable();
+};
+
+document.getElementById('lzCancelBtn').addEventListener('click', resetLaserForm);
+
+function resetLaserForm() {
+  document.getElementById('lzEditId').value    = '';
+  document.getElementById('lzProduct').value   = '';
+  document.getElementById('lzMaterial').value  = '';
+  document.getElementById('lzLaser').value     = 'Falcon T1 — 20W Diode';
+  document.getElementById('lzLaserOther').value = '';
+  document.getElementById('lzOperation').value = 'Engrave';
+  document.getElementById('lzPower').value     = '';
+  document.getElementById('lzSpeed').value     = '';
+  document.getElementById('lzPasses').value    = '';
+  document.getElementById('lzFocus').value     = '';
+  document.getElementById('lzDpi').value       = '';
+  document.getElementById('lzAirAssist').value = 'On';
+  document.getElementById('lzFrequency').value = '';
+  document.getElementById('lzNotes').value     = '';
+  toggleLaserOtherField();
+  document.getElementById('lzSaveBtn').textContent     = 'Add Job';
+  document.getElementById('lzCancelBtn').style.display = 'none';
 }
 
 // ── Printers ──────────────────────────────────────────────────────────────────

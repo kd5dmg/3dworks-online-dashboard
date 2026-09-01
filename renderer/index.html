@@ -25,6 +25,7 @@
         <button class="tab-btn" data-tab="inventory">Inventory</button>
         <button class="tab-btn" data-tab="print-queue">Print Queue</button>
         <button class="tab-btn" data-tab="filament-storage">Filament Storage</button>
+        <button class="tab-btn" data-tab="laser">Laser</button>
         <button class="tab-btn" data-tab="settings">Settings</button>
         <button class="tab-btn" data-tab="history">History</button>
       </nav>
@@ -542,6 +543,105 @@
         <h2>Filament Storage — Humidity &amp; Temp</h2>
         <div id="haSensorsEmpty" class="result-empty">Not configured yet — add your Home Assistant URL and token in the Settings tab.</div>
         <div id="haSensorsGrid"></div>
+      </div>
+    </div>
+
+    <!-- LASER TAB -->
+    <div id="tab-laser" class="tab">
+      <div class="card">
+        <h2>Laser Settings Log</h2>
+        <div id="laserEmpty" class="result-empty">No saved laser jobs yet — add one below.</div>
+        <div class="table-scroll">
+          <table class="data-table" id="laserTable" style="display:none">
+            <thead>
+              <tr>
+                <th>Product</th><th>Material</th><th>Laser</th><th>Operation</th>
+                <th>Power</th><th>Speed</th><th>Passes</th><th>Updated</th><th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <hr />
+        <h3>Add / Edit Job</h3>
+        <input type="hidden" id="lzEditId" />
+        <div class="two-col">
+          <div>
+            <div class="field">
+              <label>Product</label>
+              <input type="text" id="lzProduct" placeholder="e.g. Barn ornament, dog tag" />
+            </div>
+            <div class="field">
+              <label>Material</label>
+              <input type="text" id="lzMaterial" placeholder="e.g. Black acrylic, basswood" />
+            </div>
+            <div class="field">
+              <label>Laser used</label>
+              <select id="lzLaser">
+                <option>Falcon T1 — 20W Diode</option>
+                <option>Falcon T1 — 40W Diode</option>
+                <option>Falcon T1 — 20W Fiber</option>
+                <option>Falcon T1 — 5W UV</option>
+                <option>Falcon T1 — 60W MOPA</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field" id="lzLaserOtherWrap" style="display:none">
+              <label>Laser name</label>
+              <input type="text" id="lzLaserOther" placeholder="Name your laser" />
+            </div>
+            <div class="field">
+              <label>Operation</label>
+              <select id="lzOperation">
+                <option>Engrave</option>
+                <option>Cut</option>
+                <option>Mark</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <div class="field">
+              <label>Power (%)</label>
+              <input type="text" id="lzPower" placeholder="e.g. 85" />
+            </div>
+            <div class="field">
+              <label>Speed (mm/min)</label>
+              <input type="text" id="lzSpeed" placeholder="e.g. 4500" />
+            </div>
+            <div class="field">
+              <label>Passes</label>
+              <input type="text" id="lzPasses" placeholder="1" />
+            </div>
+            <div class="field">
+              <label>Focus height (mm)</label>
+              <input type="text" id="lzFocus" placeholder="Optional" />
+            </div>
+            <div class="field">
+              <label>DPI / lines per inch</label>
+              <input type="text" id="lzDpi" placeholder="Optional" />
+            </div>
+            <div class="field">
+              <label>Air assist</label>
+              <select id="lzAirAssist">
+                <option>On</option>
+                <option>Off</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Frequency / other numeric setting</label>
+              <input type="text" id="lzFrequency" placeholder="Optional" />
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Notes</label>
+          <textarea id="lzNotes" rows="3" placeholder="Masking used, number of test passes, edge quality, anything to remember next time"></textarea>
+        </div>
+        <div class="inline-form">
+          <button class="btn-primary" id="lzSaveBtn">Add Job</button>
+          <button class="btn-secondary" id="lzCancelBtn" style="display:none">Cancel</button>
+          <div class="toast" id="laserToast">Saved!</div>
+        </div>
       </div>
     </div>
 
