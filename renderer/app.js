@@ -1155,13 +1155,39 @@ function toggleLaserOtherField() {
 }
 document.getElementById('lzLaser').addEventListener('change', toggleLaserOtherField);
 
+let laserSort = { key: null, dir: 'asc' };
+const LASER_SORT_ARROWS = { product: 'sortArrow-lzProduct', material: 'sortArrow-lzMaterial', laser: 'sortArrow-lzLaser' };
+
+document.querySelectorAll('#laserTable th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    if (laserSort.key === key) {
+      laserSort.dir = laserSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      laserSort = { key, dir: 'asc' };
+    }
+    renderLaserTable();
+  });
+});
+
+function getSortedLaserJobs() {
+  if (!laserSort.key) return db.laserJobs;
+  const mult = laserSort.dir === 'asc' ? 1 : -1;
+  const valueFor = j => laserSort.key === 'laser' ? laserLabel(j) : (j[laserSort.key] || '');
+  return [...db.laserJobs].sort((a, b) => valueFor(a).localeCompare(valueFor(b), undefined, { sensitivity: 'base' }) * mult);
+}
+
 function renderLaserTable() {
   const empty = document.getElementById('laserEmpty');
   const table = document.getElementById('laserTable');
   if (!db.laserJobs.length) { empty.style.display = 'block'; table.style.display = 'none'; return; }
   empty.style.display = 'none'; table.style.display = 'table';
 
-  document.querySelector('#laserTable tbody').innerHTML = db.laserJobs.map(j => `
+  Object.entries(LASER_SORT_ARROWS).forEach(([key, elId]) => {
+    document.getElementById(elId).textContent = laserSort.key === key ? (laserSort.dir === 'asc' ? '▲' : '▼') : '';
+  });
+
+  document.querySelector('#laserTable tbody').innerHTML = getSortedLaserJobs().map(j => `
     <tr>
       <td>${j.product}</td>
       <td>${j.material}</td>
