@@ -65,10 +65,12 @@ async function init() {
   await persist();
 
   renderPrinterSelect();
+  renderLcPrinterSelect();
   renderPrinterTable();
   renderFilamentSelect();
   renderFilamentTable();
   renderLaborSelect();
+  renderLcLaborSelect();
   renderLaborTable();
   renderSettings();
   renderHistory();
@@ -486,6 +488,24 @@ function renderDashboard() {
 }
 
 // ── Calculator ────────────────────────────────────────────────────────────────
+function renderLcPrinterSelect() {
+  const sel = document.getElementById('lcPrinterSelect');
+  const cur = sel.value;
+  sel.innerHTML = db.printers.map(p =>
+    `<option value="${p.id}">${p.name} — ${p.watts}W, $${p.maintenancePerHour}/hr maint</option>`
+  ).join('');
+  if (cur) sel.value = cur;
+}
+
+function renderLcLaborSelect() {
+  const sel = document.getElementById('lcLaborSelect');
+  const cur = sel.value;
+  sel.innerHTML = db.laborRates.map(l =>
+    `<option value="${l.id}">${l.name} — $${l.ratePerHour}/hr</option>`
+  ).join('');
+  if (cur) sel.value = cur;
+}
+
 function renderPrinterSelect() {
   const sel = document.getElementById('printerSelect');
   const cur = sel.value;
@@ -1290,6 +1310,170 @@ function resetLaserForm() {
   document.getElementById('lzCancelBtn').style.display = 'none';
 }
 
+// ── Laser Calculator ────────────────────────────────────────────────────────────
+document.getElementById('lcCalcBtn').addEventListener('click', calculateLaser);
+
+function calculateLaser() {
+  const printer = getById(db.printers,   document.getElementById('lcPrinterSelect').value);
+  const labor    = getById(db.laborRates, document.getElementById('lcLaborSelect').value);
+  if (!printer || !labor) return;
+
+  const items    = Math.max(1, parseInt(document.getElementById('lcItems').value) || 1);
+  const laserMin = Math.max(0, parseFloat(document.getElementById('lcLaserMinutes').value) || 0);
+  const laborMin = Math.max(0, parseFloat(document.getElementById('lcLaborMinutes').value) || 0);
+  const material = Math.max(0, parseFloat(document.getElementById('lcMaterial').value)     || 0);
+  const markup   = parseFloat(document.getElementById('lcMarkup').value)   || 3;
+  const discount = parseFloat(document.getElementById('lcDiscount').value) || 0;
+
+  const hours = laserMin / 60;
+  // Labor time entered here is a run total (like the material & laser time), but
+  // computePricing expects a per-item labor figure — divide by items before calling it.
+  const laborHours = (laborMin / items) / 60;
+  const filament = { id: 'laser-material', name: 'Material', costPerKg: material };
+
+  const r = computePricing({ printer, filament, labor, grams: 1000, hours, laborHours, extra: 0, items, markup, discount });
+
+  function priceAt(m) {
+    const commRate = r.commissionPercent / 100;
+    const p = r.totalItemCost * m / (1 - commRate);
+    return { price: p, commission: p * commRate, profit: p * (1 - commRate) - r.totalItemCost };
+  }
+
+  document.getElementById('lcCustomPrice').value = '';
+  document.getElementById('lcCustomPriceResult').style.display = 'none';
+
+  document.getElementById('lcResultEmpty').style.display   = 'none';
+  document.getElementById('lcResultContent').style.display = 'block';
+
+  document.getElementById('lc-material').textContent      = fmt(r.filamentCost);
+  document.getElementById('lc-electricity').textContent   = fmt(r.electricityCost);
+  document.getElementById('lc-maintenance').textContent   = fmt(r.maintenanceCost);
+  document.getElementById('lc-runCost').textContent       = fmt(r.totalPlateCost);
+  document.getElementById('lc-items').textContent         = r.items;
+  document.getElementById('lc-itemCost').textContent      = fmt(r.printCostPerItem);
+  document.getElementById('lc-laborName').textContent     = r.laborName;
+  document.getElementById('lc-labor').textContent         = fmt(r.laborCost);
+  document.getElementById('lc-totalItemCost').textContent = fmt(r.totalItemCost);
+
+  [[2, '2x'], [3, '3x'], [3.5, '35x']].forEach(([m, id]) => {
+    const t = priceAt(m);
+    document.getElementById(`lc-price${id}`).textContent  = fmtPrice(t.price);
+    document.getElementById(`lc-comm${id}`).textContent   = fmt(t.commission);
+    document.getElementById(`lc-profit${id}`).textContent = fmt(t.profit);
+  });
+
+  document.getElementById('lc-price').textContent      = fmtPrice(r.price);
+  document.getElementById('lc-commPct').textContent    = r.commissionPercent;
+  document.getElementById('lc-commission').textContent = fmt(r.commission);
+  document.getElementById('lc-marginPct').textContent  = r.markup;
+  document.getElementById('lc-profit').textContent     = fmt(r.profit);
+  document.getElementById('lc-net').textContent        = fmt(r.net);
+
+  document.getElementById('lcDiscountRow').style.display        = r.discount > 0 ? 'flex' : 'none';
+  document.getElementById('lcDiscountedPriceRow').style.display = r.discount > 0 ? 'flex' : 'none';
+  document.getElementById('lc-discountPct').textContent         = r.discount;
+  document.getElementById('lc-discountAmt').textContent         = '−' + fmt(r.discountAmt);
+  document.getElementById('lc-discountedPrice').textContent     = fmtPrice(r.discountedPrice);
+
+  document.getElementById('lcCalcBtn')._lastResult = r;
+}
+
+window.selectLcMarkup = (m) => {
+  document.getElementById('lcMarkup').value = m;
+  calculateLaser();
+  applyLcRoundedPrice();
+};
+
+function applyLcRoundedPrice() {
+  const r = document.getElementById('lcCalcBtn')._lastResult;
+  if (!r) return;
+
+  const roundedPrice    = Math.round(r.price);
+  const commRate        = (r.commissionPercent || 0) / 100;
+  const commission      = roundedPrice * commRate;
+  const net             = roundedPrice - commission;
+  const profit          = net - r.totalItemCost;
+  const discountAmt     = roundedPrice * ((r.discount || 0) / 100);
+  const discountedPrice = roundedPrice - discountAmt;
+
+  Object.assign(r, { price: roundedPrice, commission, net, profit, discountAmt, discountedPrice });
+
+  document.getElementById('lc-price').textContent           = fmtPrice(roundedPrice);
+  document.getElementById('lc-commission').textContent      = fmt(commission);
+  document.getElementById('lc-profit').textContent          = fmt(profit);
+  document.getElementById('lc-net').textContent             = fmt(net);
+  document.getElementById('lc-discountAmt').textContent     = '−' + fmt(discountAmt);
+  document.getElementById('lc-discountedPrice').textContent = fmtPrice(discountedPrice);
+}
+
+document.getElementById('lcResetBtn').addEventListener('click', () => {
+  document.getElementById('lcPrinterSelect').selectedIndex = 0;
+  document.getElementById('lcLaborSelect').selectedIndex   = 0;
+  document.getElementById('lcItems').value        = 1;
+  document.getElementById('lcLaserMinutes').value = 15;
+  document.getElementById('lcLaborMinutes').value = 15;
+  document.getElementById('lcMaterial').value     = 5;
+  document.getElementById('lcMarkup').value       = 3;
+  document.getElementById('lcDiscount').value     = 0;
+  document.getElementById('lcJobName').value      = '';
+  document.getElementById('lcCustomPrice').value  = '';
+  document.getElementById('lcCustomPriceResult').style.display = 'none';
+
+  document.getElementById('lcCalcBtn')._lastResult = null;
+  document.getElementById('lcResultEmpty').style.display   = 'block';
+  document.getElementById('lcResultContent').style.display = 'none';
+});
+
+document.getElementById('lcCustomPrice').addEventListener('input', () => {
+  const r = document.getElementById('lcCalcBtn')._lastResult;
+  const customPrice = parseFloat(document.getElementById('lcCustomPrice').value);
+  const result = document.getElementById('lcCustomPriceResult');
+  if (!r || isNaN(customPrice) || customPrice <= 0) { result.style.display = 'none'; return; }
+
+  result.style.display = 'block';
+  const commRate   = r.commissionPercent / 100;
+  const commission = customPrice * commRate;
+  const net        = customPrice - commission;
+  const profit     = net - r.totalItemCost;
+  const effectiveMarkup = customPrice / r.totalItemCost;
+  const belowCost       = net < r.totalItemCost;
+
+  document.getElementById('lc-cpCommPct').textContent    = r.commissionPercent;
+  document.getElementById('lc-cpCommission').textContent = fmt(commission);
+  document.getElementById('lc-cpNet').textContent        = fmt(net);
+  document.getElementById('lc-cpProfit').textContent     = fmt(profit);
+  document.getElementById('lc-cpMargin').textContent     = effectiveMarkup.toFixed(2) + '×';
+  document.getElementById('lc-cpMargin').style.color     = belowCost ? 'var(--red)' : effectiveMarkup < 1.5 ? 'var(--yellow)' : 'var(--green)';
+  document.getElementById('lc-cpWarning').style.display  = belowCost ? 'block' : 'none';
+});
+
+// Returns overrides from the custom price field if one has been entered.
+function resolvedLcPricing(r) {
+  const customPrice = parseFloat(document.getElementById('lcCustomPrice').value);
+  if (!r || isNaN(customPrice) || customPrice <= 0) return {};
+  const commRate   = (r.commissionPercent || 0) / 100;
+  const commission = customPrice * commRate;
+  const net        = customPrice - commission;
+  const profit     = net - r.totalItemCost;
+  return { price: customPrice, commission, net, profit, discount: 0, discountAmt: 0, discountedPrice: customPrice };
+}
+
+document.getElementById('lcSaveBtn').addEventListener('click', () => {
+  const r = document.getElementById('lcCalcBtn')._lastResult;
+  if (!r) return;
+  const job = document.getElementById('lcJobName').value.trim() || '—';
+  const resolved = { ...r, ...resolvedLcPricing(r) };
+  db.history.unshift({ id: Date.now(), date: new Date().toLocaleDateString(), job, ...resolved });
+  if (job !== '—') addToInventory(job, resolved.items, resolved.discount ? resolved.discountedPrice : resolved.price);
+  persist();
+  renderHistory();
+  renderInventoryTable();
+  renderDashboard();
+  const btn = document.getElementById('lcSaveBtn');
+  btn.textContent = 'Saved ✓';
+  setTimeout(() => btn.textContent = 'Save to History', 1500);
+});
+
 // ── Printers ──────────────────────────────────────────────────────────────────
 const PLATFORM_LABELS = { octoprint: 'OctoPrint', bambu: 'Bambu Lab', moonraker: 'Moonraker' };
 
@@ -1350,7 +1534,7 @@ document.getElementById('prnSaveBtn').addEventListener('click', () => {
   } else {
     db.printers.push({ id: Date.now(), name, watts, maintenancePerHour: maint, webLink, platform, octoprint, bambu, moonraker });
   }
-  persist(); renderPrinterTable(); renderPrinterSelect(); resetPrinterForm(); renderPrinterStatuses();
+  persist(); renderPrinterTable(); renderPrinterSelect(); renderLcPrinterSelect(); resetPrinterForm(); renderPrinterStatuses();
 });
 
 window.editPrinter = (id) => {
@@ -1381,7 +1565,7 @@ window.deletePrinter = (id) => {
   if (db.printers.length <= 1) { alert('You must keep at least one printer.'); return; }
   if (!confirm('Delete this printer?')) return;
   db.printers = db.printers.filter(p => p.id !== Number(id));
-  persist(); renderPrinterTable(); renderPrinterSelect(); renderPrinterStatuses();
+  persist(); renderPrinterTable(); renderPrinterSelect(); renderLcPrinterSelect(); renderPrinterStatuses();
 };
 
 document.getElementById('prnCancelBtn').addEventListener('click', resetPrinterForm);
@@ -1481,7 +1665,7 @@ document.getElementById('labSaveBtn').addEventListener('click', () => {
   if (!name || isNaN(rate) || rate < 0) return;
   if (id) { const l = getById(db.laborRates, id); l.name = name; l.ratePerHour = rate; }
   else db.laborRates.push({ id: Date.now(), name, ratePerHour: rate });
-  persist(); renderLaborTable(); renderLaborSelect(); resetLaborForm();
+  persist(); renderLaborTable(); renderLaborSelect(); renderLcLaborSelect(); resetLaborForm();
 });
 
 window.editLabor = (id) => {
@@ -1497,7 +1681,7 @@ window.deleteLabor = (id) => {
   if (db.laborRates.length <= 1) { alert('You must keep at least one labor rate.'); return; }
   if (!confirm('Delete this labor rate?')) return;
   db.laborRates = db.laborRates.filter(l => l.id !== Number(id));
-  persist(); renderLaborTable(); renderLaborSelect();
+  persist(); renderLaborTable(); renderLaborSelect(); renderLcLaborSelect();
 };
 
 document.getElementById('labCancelBtn').addEventListener('click', resetLaborForm);

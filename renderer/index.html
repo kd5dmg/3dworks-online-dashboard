@@ -26,6 +26,7 @@
         <button class="tab-btn" data-tab="print-queue">Print Queue</button>
         <button class="tab-btn" data-tab="filament-storage">Filament Storage</button>
         <button class="tab-btn" data-tab="laser">Laser</button>
+        <button class="tab-btn" data-tab="laser-calc">Laser Calc</button>
         <button class="tab-btn" data-tab="settings">Settings</button>
         <button class="tab-btn" data-tab="history">History</button>
       </nav>
@@ -644,6 +645,160 @@
           <button class="btn-primary" id="lzSaveBtn">Add Job</button>
           <button class="btn-secondary" id="lzCancelBtn" style="display:none">Cancel</button>
           <div class="toast" id="laserToast">Saved!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LASER CALCULATOR TAB -->
+    <div id="tab-laser-calc" class="tab">
+      <div class="three-col">
+        <div class="card">
+          <h2>Laser Job &amp; Material</h2>
+          <div class="field">
+            <label>Laser</label>
+            <select id="lcPrinterSelect"></select>
+            <span class="hint">Pulls wattage &amp; maintenance rate from the Printers tab.</span>
+          </div>
+          <div class="field">
+            <label>Items in this run</label>
+            <input type="number" id="lcItems" min="1" step="1" value="1" />
+            <span class="hint">Cost splits evenly across items if you run more than one at a time.</span>
+          </div>
+          <div class="field">
+            <label>Laser time for the run (minutes)</label>
+            <input type="number" id="lcLaserMinutes" min="0" step="1" value="15" />
+            <span class="hint">Machine runtime only — drives energy &amp; maintenance cost.</span>
+          </div>
+          <div class="field">
+            <label>Material cost for the run ($)</label>
+            <input type="number" id="lcMaterial" min="0" step="0.01" value="5.00" />
+            <span class="hint">A 20% waste buffer is added automatically.</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Labor &amp; Pricing</h2>
+          <div class="field">
+            <label>Labor rate</label>
+            <select id="lcLaborSelect"></select>
+          </div>
+          <div class="field">
+            <label>Labor time for the run (minutes)</label>
+            <input type="number" id="lcLaborMinutes" min="0" step="1" value="15" />
+            <span class="hint">Setup, weeding, packaging…</span>
+          </div>
+          <div class="field">
+            <label>Markup multiplier</label>
+            <input type="number" id="lcMarkup" min="1" step="0.1" value="3" />
+            <span class="hint">e.g. 2 = 2× cost, 2.5 = 2.5× cost</span>
+          </div>
+          <div class="field">
+            <label>Discount (%)</label>
+            <input type="number" id="lcDiscount" min="0" max="100" step="0.5" value="0" />
+            <span class="hint">Applied to the suggested sell price.</span>
+          </div>
+          <div class="field">
+            <label>Job name (optional)</label>
+            <input type="text" id="lcJobName" placeholder="e.g. Coaster set" />
+          </div>
+          <button class="btn-primary wide" id="lcCalcBtn">Calculate Price</button>
+          <button class="btn-secondary wide" id="lcResetBtn" style="margin-top:8px">Reset to Defaults</button>
+        </div>
+
+        <div class="card results-card">
+          <h2>Cost Breakdown</h2>
+          <div class="result-empty" id="lcResultEmpty">Fill in the details and press <strong>Calculate Price</strong>.</div>
+          <div id="lcResultContent" style="display:none">
+            <table class="breakdown">
+              <tr><td>Material cost</td><td id="lc-material">—</td></tr>
+              <tr><td>Electricity cost</td><td id="lc-electricity">—</td></tr>
+              <tr><td>Maintenance cost</td><td id="lc-maintenance">—</td></tr>
+              <tr class="subtotal"><td>Total run cost</td><td id="lc-runCost">—</td></tr>
+              <tr><td>Items in run</td><td id="lc-items">—</td></tr>
+              <tr><td>Run cost per item</td><td id="lc-itemCost">—</td></tr>
+              <tr><td>Labor (<span id="lc-laborName">—</span>)</td><td id="lc-labor">—</td></tr>
+              <tr class="subtotal"><td>Total cost per item</td><td id="lc-totalItemCost">—</td></tr>
+            </table>
+
+            <div class="price-tiers">
+              <div class="price-tier" onclick="selectLcMarkup(2)" title="Click to use this markup">
+                <div class="tier-label">2× markup</div>
+                <div class="tier-price" id="lc-price2x">—</div>
+                <div class="tier-detail">Commission: <span id="lc-comm2x">—</span></div>
+                <div class="tier-detail">Profit: <span id="lc-profit2x">—</span></div>
+              </div>
+              <div class="price-tier tier-highlight" onclick="selectLcMarkup(3)" title="Click to use this markup">
+                <div class="tier-label">3× markup</div>
+                <div class="tier-price" id="lc-price3x">—</div>
+                <div class="tier-detail">Commission: <span id="lc-comm3x">—</span></div>
+                <div class="tier-detail">Profit: <span id="lc-profit3x">—</span></div>
+              </div>
+              <div class="price-tier" onclick="selectLcMarkup(3.5)" title="Click to use this markup">
+                <div class="tier-label">3.5× markup</div>
+                <div class="tier-price" id="lc-price35x">—</div>
+                <div class="tier-detail">Commission: <span id="lc-comm35x">—</span></div>
+                <div class="tier-detail">Profit: <span id="lc-profit35x">—</span></div>
+              </div>
+            </div>
+
+            <div class="price-box">
+              <div class="price-row">
+                <span>Suggested sell price per item (<span id="lc-marginPct">3</span>× markup)</span>
+                <span class="price-big" id="lc-price">—</span>
+              </div>
+              <div class="price-detail">
+                <span>Commission (<span id="lc-commPct">10</span>%)</span>
+                <span id="lc-commission">—</span>
+              </div>
+              <div class="price-detail">
+                <span>Your profit</span>
+                <span id="lc-profit">—</span>
+              </div>
+              <div class="price-detail">
+                <span>Net after commission</span>
+                <span id="lc-net">—</span>
+              </div>
+              <div class="price-detail discount-row" id="lcDiscountRow" style="display:none">
+                <span>Discount (<span id="lc-discountPct">0</span>%)</span>
+                <span id="lc-discountAmt">—</span>
+              </div>
+              <div class="price-final" id="lcDiscountedPriceRow" style="display:none">
+                <span>Discounted price</span>
+                <span id="lc-discountedPrice">—</span>
+              </div>
+            </div>
+
+            <div class="custom-price-box">
+              <h3>Custom Price</h3>
+              <div class="custom-price-row">
+                <input type="number" id="lcCustomPrice" min="0" step="0.01" placeholder="Enter your price…" />
+              </div>
+              <div id="lcCustomPriceResult" style="display:none">
+                <div class="price-detail">
+                  <span>Commission (<span id="lc-cpCommPct">—</span>%)</span>
+                  <span id="lc-cpCommission">—</span>
+                </div>
+                <div class="price-detail">
+                  <span>Net after commission</span>
+                  <span id="lc-cpNet">—</span>
+                </div>
+                <div class="price-detail">
+                  <span>Profit</span>
+                  <span id="lc-cpProfit">—</span>
+                </div>
+                <div class="effective-margin">
+                  Effective markup: <span id="lc-cpMargin">—</span>
+                </div>
+                <div class="effective-margin warning" id="lc-cpWarning" style="display:none">
+                  ⚠ Price is below cost
+                </div>
+              </div>
+            </div>
+
+            <div class="action-row">
+              <button class="btn-secondary" id="lcSaveBtn">Save to History</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
