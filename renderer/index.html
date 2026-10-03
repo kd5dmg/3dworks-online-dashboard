@@ -560,7 +560,7 @@
                 <th class="sortable" data-sort="material">Material <span class="sort-arrow" id="sortArrow-lzMaterial"></span></th>
                 <th class="sortable" data-sort="laser">Laser <span class="sort-arrow" id="sortArrow-lzLaser"></span></th>
                 <th>Operation</th>
-                <th>Power</th><th>Speed</th><th>Passes</th><th>Updated</th><th></th>
+                <th>Power</th><th>Speed (mm/s)</th><th>Passes</th><th>Updated</th><th></th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -587,6 +587,8 @@
                 <option>Falcon T1 — 20W Fiber</option>
                 <option>Falcon T1 — 5W UV</option>
                 <option>Falcon T1 — 60W MOPA</option>
+                <option>xTool M2</option>
+                <option>xTool P2S</option>
                 <option>Other</option>
               </select>
             </div>
@@ -609,8 +611,8 @@
               <input type="text" id="lzPower" placeholder="e.g. 85" />
             </div>
             <div class="field">
-              <label>Speed (mm/min)</label>
-              <input type="text" id="lzSpeed" placeholder="e.g. 4500" />
+              <label>Speed (mm/s)</label>
+              <input type="text" id="lzSpeed" placeholder="e.g. 200" />
             </div>
             <div class="field">
               <label>Passes</label>
@@ -621,15 +623,19 @@
               <input type="text" id="lzFocus" placeholder="Optional" />
             </div>
             <div class="field">
-              <label>DPI / lines per inch</label>
-              <input type="text" id="lzDpi" placeholder="Optional" />
+              <label>Lines per cm</label>
+              <input type="text" id="lzDpi" placeholder="Optional, e.g. 40" />
             </div>
             <div class="field">
               <label>Air assist</label>
               <select id="lzAirAssist">
-                <option>On</option>
-                <option>Off</option>
+                <option>Yes</option>
+                <option>No</option>
               </select>
+            </div>
+            <div class="field" id="lzAirAssistPctWrap">
+              <label>Air assist level (10–100%)</label>
+              <input type="number" id="lzAirAssistPct" min="10" max="100" step="1" value="100" />
             </div>
             <div class="field">
               <label>Frequency / other numeric setting</label>

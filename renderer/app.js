@@ -1175,6 +1175,12 @@ function toggleLaserOtherField() {
 }
 document.getElementById('lzLaser').addEventListener('change', toggleLaserOtherField);
 
+function toggleAirAssistPct() {
+  const on = document.getElementById('lzAirAssist').value === 'Yes';
+  document.getElementById('lzAirAssistPctWrap').style.display = on ? 'block' : 'none';
+}
+document.getElementById('lzAirAssist').addEventListener('change', toggleAirAssistPct);
+
 let laserSort = { key: null, dir: 'asc' };
 const LASER_SORT_ARROWS = { product: 'sortArrow-lzProduct', material: 'sortArrow-lzMaterial', laser: 'sortArrow-lzLaser' };
 
@@ -1242,6 +1248,9 @@ document.getElementById('lzSaveBtn').addEventListener('click', () => {
     focus: document.getElementById('lzFocus').value.trim(),
     dpi: document.getElementById('lzDpi').value.trim(),
     airAssist: document.getElementById('lzAirAssist').value,
+    airAssistPct: document.getElementById('lzAirAssist').value === 'Yes'
+      ? Math.min(100, Math.max(10, parseInt(document.getElementById('lzAirAssistPct').value) || 100))
+      : '',
     frequency: document.getElementById('lzFrequency').value.trim(),
     notes: document.getElementById('lzNotes').value.trim(),
     updated: new Date().toISOString()
@@ -1272,7 +1281,9 @@ window.editLaserJob = (id) => {
   document.getElementById('lzPasses').value    = j.passes || '1';
   document.getElementById('lzFocus').value     = j.focus || '';
   document.getElementById('lzDpi').value       = j.dpi || '';
-  document.getElementById('lzAirAssist').value = j.airAssist || 'On';
+  document.getElementById('lzAirAssist').value = (j.airAssist === 'On' || j.airAssist === 'Yes') ? 'Yes' : 'No';
+  document.getElementById('lzAirAssistPct').value = j.airAssistPct || 100;
+  toggleAirAssistPct();
   document.getElementById('lzFrequency').value = j.frequency || '';
   document.getElementById('lzNotes').value     = j.notes || '';
   toggleLaserOtherField();
@@ -1302,7 +1313,9 @@ function resetLaserForm() {
   document.getElementById('lzPasses').value    = '';
   document.getElementById('lzFocus').value     = '';
   document.getElementById('lzDpi').value       = '';
-  document.getElementById('lzAirAssist').value = 'On';
+  document.getElementById('lzAirAssist').value = 'Yes';
+  document.getElementById('lzAirAssistPct').value = 100;
+  toggleAirAssistPct();
   document.getElementById('lzFrequency').value = '';
   document.getElementById('lzNotes').value     = '';
   toggleLaserOtherField();
