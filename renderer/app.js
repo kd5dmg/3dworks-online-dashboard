@@ -1203,6 +1203,12 @@ function getSortedLaserJobs() {
   return [...db.laserJobs].sort((a, b) => valueFor(a).localeCompare(valueFor(b), undefined, { sensitivity: 'base' }) * mult);
 }
 
+function laserAirAssistLabel(j) {
+  const on = j.airAssist === 'Yes' || j.airAssist === 'On';
+  if (!on) return 'No';
+  return j.airAssistPct ? j.airAssistPct + '%' : 'Yes';
+}
+
 function renderLaserTable() {
   const empty = document.getElementById('laserEmpty');
   const table = document.getElementById('laserTable');
@@ -1222,7 +1228,7 @@ function renderLaserTable() {
       <td>${j.power || '—'}${j.power ? '%' : ''}</td>
       <td>${j.speed || '—'}</td>
       <td>${j.passes || 1}</td>
-      <td>${j.updated ? new Date(j.updated).toLocaleDateString() : '—'}</td>
+      <td>${laserAirAssistLabel(j)}</td>
       <td>
         <button class="icon-btn" onclick="editLaserJob(${j.id})">✏️</button>
         <button class="icon-btn del" onclick="deleteLaserJob(${j.id})">🗑</button>
