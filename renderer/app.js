@@ -1493,6 +1493,85 @@ document.getElementById('lcSaveBtn').addEventListener('click', () => {
   setTimeout(() => btn.textContent = 'Save to History', 1500);
 });
 
+// ── UV Calculator ─────────────────────────────────────────────────────────────
+const UV_DEFAULTS = { uvRate: 0.4, uvInk: 4.5, uvMaterial: 2, uvOverhead: 30, uvMarkup: 3, uvPieces: 4, uvManual: '', uvJobName: '' };
+
+function uvNum(id) {
+  const n = parseFloat(document.getElementById(id).value);
+  return isFinite(n) && n > 0 ? n : 0;
+}
+
+function computeUv() {
+  const rate = uvNum('uvRate'), ink = uvNum('uvInk'), mat = uvNum('uvMaterial');
+  const ohPct = uvNum('uvOverhead'), markup = uvNum('uvMarkup');
+  const pieces = Math.max(1, Math.round(uvNum('uvPieces')));
+  const manual = uvNum('uvManual');
+
+  const inkCost  = ink * rate;
+  const subtotal = inkCost + mat;
+  const overhead = subtotal * ohPct / 100;
+  const total    = subtotal + overhead;
+  const jobPrice = manual ? manual * pieces : total * markup;
+  const effMarkup = total > 0 ? jobPrice / total : 0;
+  return {
+    rate, ink, mat, ohPct, pieces, inkCost, subtotal, overhead, total, jobPrice, effMarkup, isManual: !!manual,
+    costPc: total / pieces, pricePc: jobPrice / pieces,
+    profit: jobPrice - total, profitPc: (jobPrice - total) / pieces
+  };
+}
+
+function updateUv() {
+  const u = computeUv();
+  const set = (id, v) => { document.getElementById(id).textContent = v; };
+  set('uv-ink',     u.ink.toLocaleString('en-US', { maximumFractionDigits: 3 }) + ' ml');
+  set('uv-inkCost', fmt(u.inkCost));
+  set('uv-mat',     fmt(u.mat));
+  set('uv-sub',     fmt(u.subtotal));
+  set('uv-ohLabel', `Overhead (${u.ohPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%)`);
+  set('uv-oh',      fmt(u.overhead));
+  set('uv-total',   fmt(u.total));
+  set('uv-costPc',  fmt(u.costPc));
+  set('uv-priceLabel', `Price per piece (${u.isManual ? 'manual, ' : ''}${u.effMarkup.toLocaleString('en-US', { maximumFractionDigits: 2 })}×)`);
+  set('uv-pricePc', fmt(u.pricePc));
+  set('uv-jobPrice', fmt(u.jobPrice));
+  set('uv-profitPc', fmt(u.profitPc));
+  set('uv-profit',  fmt(u.profit));
+}
+
+Object.keys(UV_DEFAULTS).filter(id => id !== 'uvJobName').forEach(id =>
+  document.getElementById(id).addEventListener('input', updateUv));
+
+document.getElementById('uvResetBtn').addEventListener('click', () => {
+  Object.entries(UV_DEFAULTS).forEach(([id, v]) => { document.getElementById(id).value = v; });
+  updateUv();
+});
+
+document.getElementById('uvSaveBtn').addEventListener('click', () => {
+  const u = computeUv();
+  const job = document.getElementById('uvJobName').value.trim() || '—';
+  db.history.unshift({
+    id: Date.now(), date: new Date().toLocaleDateString(), job, type: 'uv',
+    printerName: 'UV Printer', filamentName: 'UV Ink', grams: 0, inkMl: u.ink, hours: 0,
+    laborName: '—', laborHours: 0, laborCost: 0,
+    extra: u.mat, items: u.pieces,
+    filamentCost: u.inkCost, electricityCost: 0, maintenanceCost: u.overhead,
+    totalPlateCost: u.total, printCostPerItem: u.costPc, totalItemCost: u.costPc,
+    markup: u.effMarkup, price: u.pricePc, commissionPercent: 0, commission: 0,
+    net: u.pricePc, profit: u.profitPc,
+    discount: 0, discountAmt: 0, discountedPrice: u.pricePc
+  });
+  if (job !== '—') addToInventory(job, u.pieces, u.pricePc);
+  persist();
+  renderHistory();
+  renderInventoryTable();
+  renderDashboard();
+  const btn = document.getElementById('uvSaveBtn');
+  btn.textContent = 'Saved ✓';
+  setTimeout(() => btn.textContent = 'Save to History', 1500);
+});
+
+updateUv();
+
 // ── Printers ──────────────────────────────────────────────────────────────────
 const PLATFORM_LABELS = { octoprint: 'OctoPrint', bambu: 'Bambu Lab', moonraker: 'Moonraker' };
 
@@ -1827,7 +1906,7 @@ function renderHistory() {
       <td>${h.job}</td>
       <td>${h.printerName || '—'}</td>
       <td>${h.filamentName}</td>
-      <td>${h.grams}g</td>
+      <td>${h.type === 'uv' ? h.inkMl + 'ml' : h.grams + 'g'}</td>
       <td>${h.hours}h</td>
       <td>${h.laborName || '—'}</td>
       <td>${h.laborHours || 0}h</td>
@@ -1879,6 +1958,7 @@ function renderHeSelects() {
 window.editHistory = (id) => {
   const h = getById(db.history, id);
   if (!h) return;
+  if (h.type === 'uv') { alert('UV jobs can\'t be edited here. Delete it and save a new one from the UV Calc tab.'); return; }
 
   renderHeSelects();
   document.getElementById('heEditId').value       = h.id;

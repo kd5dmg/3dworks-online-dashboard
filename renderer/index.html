@@ -27,6 +27,7 @@
         <button class="tab-btn" data-tab="filament-storage">Filament Storage</button>
         <button class="tab-btn" data-tab="laser">Laser</button>
         <button class="tab-btn" data-tab="laser-calc">Laser Calc</button>
+        <button class="tab-btn" data-tab="uv-calc">UV Calc</button>
         <button class="tab-btn" data-tab="settings">Settings</button>
         <button class="tab-btn" data-tab="history">History</button>
       </nav>
@@ -804,6 +805,76 @@
             <div class="action-row">
               <button class="btn-secondary" id="lcSaveBtn">Save to History</button>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- UV CALCULATOR TAB -->
+    <div id="tab-uv-calc" class="tab">
+      <div class="two-col">
+        <div class="card">
+          <h2>UV Ink &amp; Job</h2>
+          <div class="field">
+            <label>Ink rate ($/ml)</label>
+            <input type="number" id="uvRate" min="0" step="any" value="0.40" />
+          </div>
+          <div class="field">
+            <label>Total ink used (ml)</label>
+            <input type="number" id="uvInk" min="0" step="any" value="4.5" />
+            <span class="hint">Use the reading from your print.</span>
+          </div>
+          <div class="field">
+            <label>Material cost ($)</label>
+            <input type="number" id="uvMaterial" min="0" step="any" value="2.00" />
+          </div>
+          <div class="field">
+            <label>Overhead (%)</label>
+            <input type="number" id="uvOverhead" min="0" step="any" value="30" />
+            <span class="hint">Applied to ink plus material.</span>
+          </div>
+          <div class="field">
+            <label>Markup multiplier</label>
+            <input type="number" id="uvMarkup" min="0" step="0.1" value="3" />
+          </div>
+          <div class="field">
+            <label>Pieces per job</label>
+            <input type="number" id="uvPieces" min="1" step="1" value="4" />
+          </div>
+          <div class="field">
+            <label>Manual price each ($)</label>
+            <input type="number" id="uvManual" min="0" step="0.01" placeholder="Auto" />
+            <span class="hint">Overrides the markup price. Clear it to go back to the markup.</span>
+          </div>
+          <div class="field">
+            <label>Job name (optional)</label>
+            <input type="text" id="uvJobName" placeholder="e.g. Phone case set" />
+          </div>
+          <button class="btn-secondary wide" id="uvResetBtn">Reset to Defaults</button>
+        </div>
+
+        <div class="card results-card">
+          <h2>Cost Breakdown</h2>
+          <table class="breakdown">
+            <tr><td>Ink used</td><td id="uv-ink">—</td></tr>
+            <tr><td>Ink cost</td><td id="uv-inkCost">—</td></tr>
+            <tr><td>Material cost</td><td id="uv-mat">—</td></tr>
+            <tr class="subtotal"><td>Subtotal</td><td id="uv-sub">—</td></tr>
+            <tr><td id="uv-ohLabel">Overhead</td><td id="uv-oh">—</td></tr>
+            <tr class="subtotal"><td>Print cost (whole job)</td><td id="uv-total">—</td></tr>
+            <tr><td>Cost per piece</td><td id="uv-costPc">—</td></tr>
+          </table>
+          <div class="price-box">
+            <div class="price-row">
+              <span id="uv-priceLabel">Price per piece</span>
+              <span class="price-big" id="uv-pricePc">—</span>
+            </div>
+            <div class="price-detail"><span>Job selling price</span><span id="uv-jobPrice">—</span></div>
+            <div class="price-detail"><span>Profit per piece</span><span id="uv-profitPc">—</span></div>
+            <div class="price-detail"><span>Profit per job</span><span id="uv-profit">—</span></div>
+          </div>
+          <div class="action-row">
+            <button class="btn-secondary" id="uvSaveBtn">Save to History</button>
           </div>
         </div>
       </div>
